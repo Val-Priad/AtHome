@@ -10,3 +10,6 @@ class User(Base):
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     age = Column(Integer, nullable=False)
+
+    def to_dict(self):
+        return {"id": self.id, "name": self.name, "age": self.age}
