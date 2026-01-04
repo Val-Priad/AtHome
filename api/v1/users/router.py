@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, current_app
 from db import session
 from .models import User
 from sqlalchemy import delete, CursorResult
@@ -16,6 +16,7 @@ def construct_response(data=None, message="OK", status=200):
 
 @bp.get("/hello")
 def hello():
+    current_app.logger.info("Amogus")
     return construct_response(message="Hello Flask")
 
 
