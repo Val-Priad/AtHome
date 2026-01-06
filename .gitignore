@@ -18,5 +18,8 @@ wheels/
 # log files
 *.log
 
+# alembic
+migrations
+
 # thoughts files
 OLD_DATA
