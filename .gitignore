@@ -17,3 +17,6 @@ wheels/
 
 # log files
 *.log
+
+# thoughts files
+OLD_DATA
