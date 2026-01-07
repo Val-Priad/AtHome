@@ -1,17 +1,19 @@
-import uuid
 import datetime
-from sqlalchemy import (
-    String,
-    Enum,
-    DateTime,
-    func,
-    Boolean,
-    LargeBinary,
-)
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID
-from db import Base
 import enum
+import uuid
+
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    LargeBinary,
+    String,
+    func,
+)
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from db import Base
 
 
 class UserRole(enum.Enum):
@@ -56,7 +58,7 @@ class User(Base):
         return {
             "id": self.id,
             "email": self.email,
-            "role": self.role,
+            "role": self.role.value,
             "name": self.name,
             "phone_number": self.phone_number,
             "avatar": self.avatar,

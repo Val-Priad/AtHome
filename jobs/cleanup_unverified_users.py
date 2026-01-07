@@ -1,8 +1,11 @@
-from datetime import timedelta, datetime, timezone
-from db import session
-from sqlalchemy import delete, CursorResult
-from api.v1.users.models import User
+from datetime import datetime, timedelta, timezone
 from typing import cast
+
+from sqlalchemy import CursorResult, delete
+
+from api.v1.users.models.user import User
+from db import session
+
 from .jobs_logger import jobs_logger
 
 

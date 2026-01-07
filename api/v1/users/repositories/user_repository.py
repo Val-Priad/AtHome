@@ -1,6 +1,8 @@
 from sqlalchemy import select
+
 from db import session
-from .models import User
+
+from ..models.user import User
 
 
 class UserRepository:
@@ -23,11 +25,9 @@ class UserRepository:
     def exists_by_email(email: str):
         db = session()
         try:
-            result = db.scalars(
-                select(User).where(User.email == email)
-            ).first()
+            result = db.scalar(select(1).where(User.email == email))
 
-            return result is None
+            return result is not None
 
         finally:
             db.close()
