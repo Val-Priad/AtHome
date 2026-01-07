@@ -6,8 +6,11 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "alembic>=1.17.2",
+    "bcrypt>=5.0.0",
     "flask>=3.1.2",
+    "flask-jwt-extended>=4.7.1",
     "psycopg2-binary>=2.9.11",
     "python-dotenv>=1.2.1",
+    "resend>=2.19.0",
     "sqlalchemy>=2.0.45",
 ]
