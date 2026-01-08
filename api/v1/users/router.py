@@ -5,10 +5,10 @@ from pydantic import ValidationError
 from sqlalchemy import CursorResult, delete
 
 from db import session
-from exceptions.user import UserAlreadyExistsError
+from exceptions.user import UserAlreadyExistsError, UserNotFoundError
 
 from .models.user import User
-from .schemas.auth import RegisterRequest
+from .schemas.auth import RegisterRequest, SendNewValidationTokenRequest
 from .services.auth_service import AuthService
 from .services.email_verification_service import EmailVerificationService
 
@@ -22,7 +22,27 @@ def construct_response(data=None, message="OK", status=200):
     return jsonify(payload), status
 
 
-# TODO create route for asking new email verification token
+@bp.post("/resend-token")
+def resend_token():
+    try:
+        data = SendNewValidationTokenRequest.model_validate(request.json)
+        user = EmailVerificationService.get_user_by_email(data.email)
+        raw_token = EmailVerificationService.get_resend_token(user.id)
+        EmailVerificationService.send_verification_email(user.email, raw_token)
+        return construct_response(
+            message="Check your email for confirmation link", status=201
+        )
+    except ValidationError:
+        return construct_response(message="Validation error", status=400)
+    except UserNotFoundError as e:
+        return construct_response(
+            f"There is no user with email {e.email}, register first",
+            status=400,
+        )
+    except Exception:
+        current_app.logger.exception("💥💥💥")
+        return construct_response(message="Internal server error", status=500)
+
 
 # TODO create route for validating user's email
 
@@ -31,26 +51,25 @@ def construct_response(data=None, message="OK", status=200):
 def register():
     try:
         data = RegisterRequest.model_validate(request.json)
+        user, raw_token = AuthService.add_user_and_token(
+            data.email, data.password
+        )
     except ValidationError:
         return construct_response(message="Validation error", status=400)
-    try:
-        user = AuthService.register_user(data.email, data.password)
-
     except UserAlreadyExistsError:
         return construct_response(
             message="User with such email already exists", status=409
         )
     except Exception:
-        current_app.logger.exception("💥💥💥")
+        current_app.logger.exception("User and token creation failed")
         return construct_response(message="Internal server error", status=500)
 
     email_sent = False
     try:
-        token = EmailVerificationService.generate_verification_token(user.id)
-        EmailVerificationService.send_verification_email(user.email, token)
+        EmailVerificationService.send_verification_email(user.email, raw_token)
         email_sent = True
     except Exception:
-        current_app.logger.exception("💥💥💥")
+        current_app.logger.exception("Email send failed")
 
     return construct_response(
         data={"created_user": user.to_dict(), "email_sent": email_sent},
