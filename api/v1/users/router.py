@@ -1,12 +1,14 @@
 from typing import cast
 
 from flask import Blueprint, current_app, jsonify, request
+from pydantic import ValidationError
 from sqlalchemy import CursorResult, delete
 
 from db import session
 from exceptions.user import UserAlreadyExistsError
 
 from .models.user import User
+from .schemas.auth import RegisterRequest
 from .services.auth_service import AuthService
 from .services.email_verification_service import EmailVerificationService
 
@@ -27,16 +29,12 @@ def construct_response(data=None, message="OK", status=200):
 
 @bp.post("/register")
 def register():
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
-    # TODO create validation schema
-    if not email:
-        return construct_response(message="Missing email", status=400)
-    if not password:
-        return construct_response(message="Missing password", status=400)
-
     try:
-        user = AuthService.register_user(email, password)
+        data = RegisterRequest.model_validate(request.json)
+    except ValidationError:
+        return construct_response(message="Validation error", status=400)
+    try:
+        user = AuthService.register_user(data.email, data.password)
 
     except UserAlreadyExistsError:
         return construct_response(
@@ -53,7 +51,6 @@ def register():
         email_sent = True
     except Exception:
         current_app.logger.exception("💥💥💥")
-        return construct_response(message="Internal server error", status=500)
 
     return construct_response(
         data={"created_user": user.to_dict(), "email_sent": email_sent},

@@ -4,7 +4,6 @@ from exceptions.user import UserAlreadyExistsError
 
 from ..models.user import User
 from ..repositories.user_repository import UserRepository
-from .email_verification_service import EmailVerificationService
 
 
 class AuthService:
