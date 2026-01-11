@@ -4,7 +4,7 @@ from typing import cast
 from sqlalchemy import CursorResult, delete
 
 from api.v1.users.models.user import User
-from db import session
+from infrastructure.db import session
 
 from .jobs_logger import jobs_logger
 

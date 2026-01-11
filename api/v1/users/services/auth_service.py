@@ -1,7 +1,7 @@
 import bcrypt
 
-from db import session
 from exceptions.user import UserAlreadyExistsError
+from infrastructure.db import session
 
 from ..models.user import User
 from ..repositories.user_repository import UserRepository

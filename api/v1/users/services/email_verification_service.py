@@ -8,7 +8,7 @@ import resend
 from flask import jsonify
 from sqlalchemy.orm import Session
 
-from db import session
+from infrastructure.db import session
 
 from ..repositories.email_verification_token_repository import (
     EmailVerificationTokenRepository,

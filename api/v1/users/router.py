@@ -4,8 +4,8 @@ from flask import Blueprint, current_app, jsonify, request
 from pydantic import ValidationError
 from sqlalchemy import CursorResult, delete
 
-from db import session
 from exceptions.user import UserAlreadyExistsError, UserNotFoundError
+from infrastructure.db import session
 
 from .models.user import User
 from .schemas.auth import RegisterRequest, SendNewValidationTokenRequest
@@ -22,7 +22,7 @@ def construct_response(data=None, message="OK", status=200):
     return jsonify(payload), status
 
 
-@bp.post("/resend-token")
+@bp.post("/resend-verification")
 def resend_token():
     try:
         data = SendNewValidationTokenRequest.model_validate(request.json)
@@ -75,33 +75,6 @@ def register():
         data={"created_user": user.to_dict(), "email_sent": email_sent},
         status=201,
     )
-
-
-@bp.get("/hello")
-def hello():
-    current_app.logger.info("Amogus")
-    return construct_response(message="Hello Flask")
-
-
-@bp.post("/add-test")
-def add_test_user():
-    db = session()
-    try:
-        user = User(name="Valera", age=19)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        return construct_response(
-            data=user.to_dict(),
-            message="User was created successfully",
-            status=201,
-        )
-    except Exception:
-        db.rollback()
-        return construct_response(message="Internal server error", status=500)
-
-    finally:
-        db.close()
 
 
 @bp.delete("/delete-test")

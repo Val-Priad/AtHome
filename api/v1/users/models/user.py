@@ -13,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from db import Base
+from infrastructure.db import Base
 
 
 class UserRole(enum.Enum):

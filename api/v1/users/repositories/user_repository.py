@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from db import session
 from exceptions.user import UserNotFoundError
+from infrastructure.db import session
 
 from ..models.user import User
 
