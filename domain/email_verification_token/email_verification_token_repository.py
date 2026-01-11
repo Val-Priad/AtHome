@@ -4,7 +4,9 @@ from datetime import datetime, timezone
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
-from ..models.email_verification_token import EmailVerificationToken
+from domain.email_verification_token.email_verification_token_model import (
+    EmailVerificationToken,
+)
 
 
 class EmailVerificationTokenRepository:

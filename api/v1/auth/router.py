@@ -8,9 +8,9 @@ from exceptions.user import UserAlreadyExistsError, UserNotFoundError
 from infrastructure.db import session
 
 from domain.user.user_model import User
-from .schemas.auth import RegisterRequest, SendNewValidationTokenRequest
-from ....domain.services.auth_service import AuthService
-from ....domain.services.email_verification_service import (
+from .auth_schema import RegisterRequest, SendNewValidationTokenRequest
+from domain.services.auth_service import AuthService
+from domain.services.email_verification_service import (
     EmailVerificationService,
 )
 
