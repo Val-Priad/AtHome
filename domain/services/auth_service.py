@@ -3,9 +3,11 @@ import bcrypt
 from exceptions.user import UserAlreadyExistsError
 from infrastructure.db import session
 
-from ..models.user import User
-from ..repositories.user_repository import UserRepository
-from ..services.email_verification_service import EmailVerificationService
+from domain.user.user_model import User
+from ..user.user_repository import UserRepository
+from .email_verification_service import (
+    EmailVerificationService,
+)
 
 
 class AuthService:

@@ -7,10 +7,12 @@ from sqlalchemy import CursorResult, delete
 from exceptions.user import UserAlreadyExistsError, UserNotFoundError
 from infrastructure.db import session
 
-from .models.user import User
+from domain.user.user_model import User
 from .schemas.auth import RegisterRequest, SendNewValidationTokenRequest
-from .services.auth_service import AuthService
-from .services.email_verification_service import EmailVerificationService
+from ....domain.services.auth_service import AuthService
+from ....domain.services.email_verification_service import (
+    EmailVerificationService,
+)
 
 bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 

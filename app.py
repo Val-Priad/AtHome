@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from flask import Flask
 
-from api.v1.users.router import bp as users_bp
+from api.v1.auth.router import bp as users_bp
 from infrastructure.db import engine  # NOQA establishing connection with db
 
 load_dotenv()

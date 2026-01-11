@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 
 from infrastructure.db import session
 
-from ..repositories.email_verification_token_repository import (
+from ..email_verification_token.email_verification_token_repository import (
     EmailVerificationTokenRepository,
 )
-from ..repositories.user_repository import UserRepository
+from ..user.user_repository import UserRepository
 
 
 class EmailVerificationService:

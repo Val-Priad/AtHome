@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from exceptions.user import UserNotFoundError
 from infrastructure.db import session
 
-from ..models.user import User
+from .user_model import User
 
 
 class UserRepository:
