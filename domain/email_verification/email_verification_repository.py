@@ -4,19 +4,19 @@ from datetime import datetime, timezone
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
-from domain.email_verification_token.email_verification_token_model import (
-    EmailVerificationToken,
+from domain.email_verification.email_verification_model import (
+    EmailVerificationModel,
 )
 
 
-class EmailVerificationTokenRepository:
+class EmailVerificationRepository:
     @staticmethod
     def deactivate_previous_tokens(db: Session, user_id: uuid.UUID):
         db.execute(
-            update(EmailVerificationToken)
+            update(EmailVerificationModel)
             .where(
-                EmailVerificationToken.user_id == user_id,
-                EmailVerificationToken.used_at.is_(None),
+                EmailVerificationModel.user_id == user_id,
+                EmailVerificationModel.used_at.is_(None),
             )
             .values(expires_at=datetime.now(timezone.utc))
         )
@@ -29,7 +29,7 @@ class EmailVerificationTokenRepository:
         expires_at: datetime,
     ):
         db.add(
-            EmailVerificationToken(
+            EmailVerificationModel(
                 user_id=user_id, token_hash=hashed_token, expires_at=expires_at
             )
         )

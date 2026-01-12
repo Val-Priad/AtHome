@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from infrastructure.db import Base
 
 
-class EmailVerificationToken(Base):
+class EmailVerificationModel(Base):
     __tablename__ = "email_verification_tokens"
 
     id: Mapped[uuid.UUID] = mapped_column(

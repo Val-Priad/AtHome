@@ -1,18 +1,11 @@
-from typing import cast
-
 from flask import Blueprint, current_app, jsonify, request
 from pydantic import ValidationError
-from sqlalchemy import CursorResult, delete
 
+from di import auth_service, email_verification_service
 from exceptions.user import UserAlreadyExistsError, UserNotFoundError
 from infrastructure.db import session
 
-from domain.user.user_model import User
 from .auth_schema import RegisterRequest, SendNewValidationTokenRequest
-from domain.services.auth_service import AuthService
-from domain.services.email_verification_service import (
-    EmailVerificationService,
-)
 
 bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 
@@ -26,11 +19,20 @@ def construct_response(data=None, message="OK", status=200):
 
 @bp.post("/resend-verification")
 def resend_token():
+    db = session()
     try:
         data = SendNewValidationTokenRequest.model_validate(request.json)
-        user = EmailVerificationService.get_user_by_email(data.email)
-        raw_token = EmailVerificationService.get_resend_token(user.id)
-        EmailVerificationService.send_verification_email(user.email, raw_token)
+
+        user = email_verification_service.get_user_by_email(db, data.email)
+
+        raw_token = email_verification_service.get_resend_token(db, user.id)
+
+        db.commit()
+
+        email_verification_service.send_verification_email(
+            user.email, raw_token
+        )
+
         return construct_response(
             message="Check your email for confirmation link", status=201
         )
@@ -42,8 +44,11 @@ def resend_token():
             status=400,
         )
     except Exception:
-        current_app.logger.exception("💥💥💥")
+        db.rollback()
+        current_app.logger.exception("Resend validation token error")
         return construct_response(message="Internal server error", status=500)
+    finally:
+        db.close()
 
 
 # TODO create route for validating user's email
@@ -51,11 +56,14 @@ def resend_token():
 
 @bp.post("/register")
 def register():
+    db = session()
     try:
         data = RegisterRequest.model_validate(request.json)
-        user, raw_token = AuthService.add_user_and_token(
-            data.email, data.password
+
+        user, raw_token = auth_service.add_user_and_token(
+            db, data.email, data.password
         )
+        db.commit()
     except ValidationError:
         return construct_response(message="Validation error", status=400)
     except UserAlreadyExistsError:
@@ -63,12 +71,15 @@ def register():
             message="User with such email already exists", status=409
         )
     except Exception:
+        db.rollback()
         current_app.logger.exception("User and token creation failed")
         return construct_response(message="Internal server error", status=500)
 
     email_sent = False
     try:
-        EmailVerificationService.send_verification_email(user.email, raw_token)
+        email_verification_service.send_verification_email(
+            user.email, raw_token
+        )
         email_sent = True
     except Exception:
         current_app.logger.exception("Email send failed")
@@ -77,42 +88,3 @@ def register():
         data={"created_user": user.to_dict(), "email_sent": email_sent},
         status=201,
     )
-
-
-@bp.delete("/delete-test")
-def delete_test_user():
-    db = session()
-    try:
-        user = db.get(User, "0476157b-ccee-41fb-9dee-965d7d3c0767")
-
-        if not user:
-            return construct_response(message="User not found", status=404)
-
-        db.delete(user)
-        db.commit()
-
-        return construct_response(
-            data=user, message="User deleted successfully", status=200
-        )
-    except Exception:
-        db.rollback()
-        return construct_response(message="Internal server error", status=500)
-    finally:
-        db.close()
-
-
-@bp.delete("/delete-all-test")
-def delete_all_test():
-    db = session()
-    try:
-        result = cast(CursorResult, db.execute(delete(User)))
-        db.commit()
-        return construct_response(
-            message=f"Successfully deleted {result.rowcount} records"
-        )
-
-    except Exception:
-        db.rollback()
-        return construct_response(message="Internal server error", status=500)
-    finally:
-        db.close()

@@ -2,7 +2,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from exceptions.user import UserNotFoundError
-from infrastructure.db import session
 
 from .user_model import User
 
@@ -16,23 +15,16 @@ class UserRepository:
         return user
 
     @staticmethod
-    def exists_by_email(email: str):
-        db = session()
-        try:
-            result = db.scalar(select(1).where(User.email == email))
+    def exists_by_email(db: Session, email: str):
+        result = db.scalar(select(1).where(User.email == email))
 
-            return result is not None
-
-        finally:
-            db.close()
+        return result is not None
 
     @staticmethod
-    def get_user_by_email(email: str) -> User:
-        db = session()
-        try:
-            result = db.scalar(select(User).where(User.email == email))
-            if result is None:
-                raise UserNotFoundError(email=email)
-            return result
-        finally:
-            db.close()
+    def get_user_by_email(db: Session, email: str) -> User:
+        result = db.scalar(select(User).where(User.email == email))
+
+        if result is None:
+            raise UserNotFoundError(email=email)
+
+        return result

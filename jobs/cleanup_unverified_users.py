@@ -3,7 +3,7 @@ from typing import cast
 
 from sqlalchemy import CursorResult, delete
 
-from api.v1.users.models.user import User
+from domain.user.user_model import User
 from infrastructure.db import session
 
 from .jobs_logger import jobs_logger
