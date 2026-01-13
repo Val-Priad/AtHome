@@ -12,6 +12,8 @@ dependencies = [
     "isort>=7.0.0",
     "psycopg2-binary>=2.9.11",
     "pydantic[email]>=2.12.5",
+    "pytest>=9.0.2",
+    "pytest-env>=1.2.0",
     "python-dotenv>=1.2.1",
     "resend>=2.19.0",
     "sqlalchemy>=2.0.45",
@@ -19,3 +21,7 @@ dependencies = [
 
 [tool.isort]
 profile = "black"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+env_files = [".env"]
