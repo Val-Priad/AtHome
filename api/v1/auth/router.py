@@ -2,7 +2,11 @@ from flask import Blueprint, current_app, jsonify, request
 from pydantic import ValidationError
 
 from di import auth_service, email_verification_service
-from exceptions.user import UserAlreadyExistsError, UserNotFoundError
+from exceptions.user import (
+    UserAlreadyExistsError,
+    UserNotFoundError,
+    UserAlreadyVerifiedError,
+)
 from infrastructure.db import session
 
 from .auth_schema import RegisterRequest, SendNewValidationTokenRequest
@@ -25,6 +29,8 @@ def resend_token():
 
         user = email_verification_service.get_user_by_email(db, data.email)
 
+        email_verification_service.check_user_is_not_verified(user)
+
         raw_token = email_verification_service.get_resend_token(db, user.id)
 
         db.commit()
@@ -40,8 +46,13 @@ def resend_token():
         return construct_response(message="Validation error", status=400)
     except UserNotFoundError as e:
         return construct_response(
-            f"There is no user with email {e.email}, register first",
+            message=f"There is no user with email {e.email}, register first",
             status=400,
+        )
+    except UserAlreadyVerifiedError as e:
+        return construct_response(
+            message=f"User with email {e.email} was already verified",
+            status=409,
         )
     except Exception:
         db.rollback()
@@ -74,6 +85,8 @@ def register():
         db.rollback()
         current_app.logger.exception("User and token creation failed")
         return construct_response(message="Internal server error", status=500)
+    finally:
+        db.close()
 
     email_sent = False
     try:

@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 from domain.email_verification.email_verification_repository import (
     EmailVerificationRepository,
 )
+from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
 from infrastructure.email.Mailer import Mailer
+from exceptions.user import UserAlreadyVerifiedError
 
 
 class EmailVerificationService:
@@ -30,6 +32,11 @@ class EmailVerificationService:
 
     def send_verification_email(self, email_to: str, token: str):
         return self.mailer.send_verification_email(email_to, token)
+
+    @staticmethod
+    def check_user_is_not_verified(user: User):
+        if user.is_email_verified:
+            raise UserAlreadyVerifiedError(user.email)
 
     def add_token(
         self,
