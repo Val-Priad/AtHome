@@ -1,4 +1,4 @@
-def test_register_valid(client, db_session):
+def test_register_valid(client):
     response = client.post(
         "/api/v1/users/register",
         json={"email": "user@example.com", "password": "some_password"},
@@ -6,14 +6,14 @@ def test_register_valid(client, db_session):
     assert response.status_code == 201
 
 
-def test_register_user_already_exists(client, db_session):
+def test_register_user_already_exists(client):
     payload = {"email": "user@example.com", "password": "some_password"}
     client.post("/api/v1/users/register", json=payload)
     response = client.post("/api/v1/users/register", json=payload)
     assert response.status_code == 409
 
 
-def test_register_user_validation_error(client, db_session):
+def test_register_user_validation_error(client):
     # invalid email format
     response = client.post(
         "/api/v1/users/register",
