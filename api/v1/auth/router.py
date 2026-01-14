@@ -22,7 +22,7 @@ def construct_response(data=None, message="OK", status=200):
 
 
 @bp.post("/resend-verification")
-def resend_token():
+def resend_verification():
     db = session()
     try:
         data = SendNewValidationTokenRequest.model_validate(request.json)
