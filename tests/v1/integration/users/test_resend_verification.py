@@ -45,7 +45,7 @@ def test_resend_verification_valid(
     previous_token_id = previous_token.id
 
     response = client.post(
-        "/api/v1/users/resend-verification",
+        "/api/v1/auth/resend-verification",
         json={"email": unverified_user.email},
     )
 
@@ -82,7 +82,7 @@ def test_resend_verification_valid(
 
 def test_resend_verification_validation(client):
     response = client.post(
-        "/api/v1/users/resend-verification",
+        "/api/v1/auth/resend-verification",
         json={"email": "invalid_email"},
     )
 
@@ -91,7 +91,7 @@ def test_resend_verification_validation(client):
 
 def test_resend_verification_if_user_not_found(client):
     response = client.post(
-        "/api/v1/users/resend-verification",
+        "/api/v1/auth/resend-verification",
         json={"email": "user_does_not_exist@example.com"},
     )
 
@@ -102,7 +102,7 @@ def test_resend_verification_if_user_not_found(client):
 
 def test_resend_verification_if_user_already_verified(client, verified_user):
     response = client.post(
-        "/api/v1/users/resend-verification",
+        "/api/v1/auth/resend-verification",
         json={"email": verified_user.email},
     )
 
@@ -122,7 +122,7 @@ def test_resend_verification_on_server_error_returns_500(
     )
 
     response = client.post(
-        "/api/v1/users/resend-verification",
+        "/api/v1/auth/resend-verification",
         json={"email": unverified_user.email},
     )
 

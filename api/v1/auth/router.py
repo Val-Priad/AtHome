@@ -11,7 +11,7 @@ from infrastructure.db import session
 
 from .auth_schema import RegisterRequest, SendNewValidationTokenRequest
 
-bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
+bp = Blueprint("users", __name__, url_prefix="/api/v1/auth")
 
 
 def construct_response(data=None, message="OK", status=200):
@@ -63,6 +63,9 @@ def resend_verification():
 
 
 # TODO create route for validating user's email
+@bp.post("/validate")
+def validate_token():
+    return construct_response()
 
 
 @bp.post("/register")
