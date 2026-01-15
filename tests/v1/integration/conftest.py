@@ -19,7 +19,17 @@ def client(app) -> FlaskClient:
     return app.test_client()
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
+def noop_send_verification_email(monkeypatch):
+    def _noop(self, email_to, token):
+        return None
+
+    monkeypatch.setattr(
+        "infrastructure.email.Mailer.Mailer.send_verification_email", _noop
+    )
+
+
+@pytest.fixture(autouse=True)
 def db_session(app: Flask, monkeypatch):
     with app.app_context():
         connection = engine.connect()
