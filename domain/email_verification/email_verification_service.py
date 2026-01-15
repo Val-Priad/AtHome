@@ -49,7 +49,7 @@ class EmailVerificationService:
         token_hash = hashlib.sha256(raw_token.encode()).digest()
 
         if invalidate_previous:
-            self.email_verification_repository.deactivate_all_tokens(
+            self.email_verification_repository.deactivate_all_user_tokens(
                 db, user_id
             )
         self.email_verification_repository.add_token(

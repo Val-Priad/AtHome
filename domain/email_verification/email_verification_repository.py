@@ -11,7 +11,7 @@ from domain.email_verification.email_verification_model import (
 
 class EmailVerificationRepository:
     @staticmethod
-    def deactivate_all_tokens(db: Session, user_id: uuid.UUID):
+    def deactivate_all_user_tokens(db: Session, user_id: uuid.UUID):
         db.execute(
             update(EmailVerification)
             .where(
