@@ -4,8 +4,8 @@ from pydantic import ValidationError
 from di import auth_service, email_verification_service
 from exceptions.user import (
     UserAlreadyExistsError,
-    UserNotFoundError,
     UserAlreadyVerifiedError,
+    UserNotFoundError,
 )
 from infrastructure.db import session
 

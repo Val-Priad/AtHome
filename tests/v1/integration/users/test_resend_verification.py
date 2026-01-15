@@ -1,11 +1,12 @@
-import pytest
+from datetime import datetime, timedelta, timezone
 
-from domain.user.user_model import User
+import pytest
 from sqlalchemy import select
+
 from domain.email_verification.email_verification_model import (
     EmailVerification,
 )
-from datetime import datetime, timezone, timedelta
+from domain.user.user_model import User
 
 
 @pytest.fixture

@@ -10,8 +10,8 @@ from domain.email_verification.email_verification_repository import (
 )
 from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
-from infrastructure.email.Mailer import Mailer
 from exceptions.user import UserAlreadyVerifiedError
+from infrastructure.email.Mailer import Mailer
 
 
 class EmailVerificationService:
