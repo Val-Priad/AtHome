@@ -1,11 +1,15 @@
 import datetime
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, LargeBinary, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infrastructure.db import Base
+
+if TYPE_CHECKING:
+    from domain.user.user_model import User
 
 
 class EmailVerification(Base):
@@ -31,3 +35,5 @@ class EmailVerification(Base):
     used_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+    user: Mapped["User"] = relationship(back_populates="email_verifications")

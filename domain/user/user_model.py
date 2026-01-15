@@ -1,6 +1,7 @@
 import datetime
 import enum
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -11,9 +12,14 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infrastructure.db import Base
+
+if TYPE_CHECKING:
+    from domain.email_verification.email_verification_model import (
+        EmailVerification,
+    )
 
 
 class UserRole(enum.Enum):
@@ -37,7 +43,7 @@ class User(Base):
         default=UserRole.user,
         nullable=False,
     )
-    is_email_verified: Mapped[Boolean] = mapped_column(
+    is_email_verified: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
     name: Mapped[str | None] = mapped_column(String(255))
@@ -52,6 +58,10 @@ class User(Base):
         default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+    email_verifications: Mapped[list["EmailVerification"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
 
     def to_dict(self):
