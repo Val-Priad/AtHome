@@ -10,7 +10,11 @@ from domain.email_verification.email_verification_repository import (
 )
 from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
-from exceptions.user import UserAlreadyVerifiedError
+from exceptions.user import (
+    EmailSendError,
+    TokenVerificationError,
+    UserAlreadyVerifiedError,
+)
 from infrastructure.email.Mailer import Mailer
 
 
@@ -27,11 +31,18 @@ class EmailVerificationService:
 
     TOKEN_TTL = timedelta(hours=24)
 
+    @staticmethod
+    def _get_hashed_token(raw_token: str):
+        return hashlib.sha256(raw_token.encode()).digest()
+
     def get_user_by_email(self, db: Session, email: str):
         return self.user_repository.get_user_by_email(db, email)
 
     def send_verification_email(self, email_to: str, token: str):
-        return self.mailer.send_verification_email(email_to, token)
+        try:
+            return self.mailer.send_verification_email(email_to, token)
+        except Exception:
+            raise EmailSendError()
 
     @staticmethod
     def check_user_is_not_verified(user: User):
@@ -46,7 +57,7 @@ class EmailVerificationService:
     ):
         expires_at = datetime.now(timezone.utc) + self.TOKEN_TTL
         raw_token = secrets.token_urlsafe(32)
-        token_hash = hashlib.sha256(raw_token.encode()).digest()
+        token_hash = self._get_hashed_token(raw_token)
 
         if invalidate_previous:
             self.email_verification_repository.deactivate_all_user_tokens(
@@ -60,6 +71,17 @@ class EmailVerificationService:
     def get_resend_token(self, db: Session, user_id: uuid.UUID):
         return self.add_token(db, user_id, invalidate_previous=True)
 
-    def validate_token(self, db: Session, token):
-        # self.email_verification_repository.
-        pass
+    def verify_token(self, db: Session, raw_token):
+        token = self.email_verification_repository.get_valid_token(
+            db, self._get_hashed_token(raw_token)
+        )
+        if token is None:
+            raise TokenVerificationError
+
+        token.used_at = datetime.now(timezone.utc)
+
+        token.user.is_email_verified = True
+
+        self.email_verification_repository.deactivate_all_user_tokens(
+            db, token.user.id
+        )

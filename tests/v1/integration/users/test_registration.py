@@ -9,7 +9,7 @@ def test_register_valid(client):
 def test_register_user_already_exists(client):
     payload = {"email": "user@example.com", "password": "some_password"}
     client.post("/api/v1/auth/register", json=payload)
-    response = client.post("/api/v1/users/register", json=payload)
+    response = client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 409
 
 
@@ -77,7 +77,7 @@ def test_register_internal_error_rolls_back(client, db_session, monkeypatch):
     assert saved_user is None
 
 
-def test_register_valid_returns_payload(client, db_session):
+def test_register_valid_returns_payload(client):
     response = client.post(
         "/api/v1/auth/register",
         json={"email": "user@example.com", "password": "12345678"},
@@ -85,16 +85,9 @@ def test_register_valid_returns_payload(client, db_session):
     assert response.status_code == 201
 
     body = response.get_json()
-    assert body["message"] == "OK"
+    assert body["message"] == "User was created successfully"
     assert "data" in body
 
     data = body["data"]
 
     assert data["email_sent"] is True
-    assert "created_user" in data
-
-    user = data["created_user"]
-
-    assert user["email"] == "user@example.com"
-    assert user["role"] == "user"
-    assert user["id"] is not None

@@ -22,7 +22,7 @@ class AuthService:
         self, db: Session, email: str, password: str
     ) -> tuple[User, str]:
         if self.user_repository.exists_by_email(db, email):
-            raise UserAlreadyExistsError()
+            raise UserAlreadyExistsError(email)
 
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 

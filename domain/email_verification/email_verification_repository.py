@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from domain.email_verification.email_verification_model import (
@@ -31,5 +31,15 @@ class EmailVerificationRepository:
         db.add(
             EmailVerification(
                 user_id=user_id, token_hash=hashed_token, expires_at=expires_at
+            )
+        )
+
+    @staticmethod
+    def get_valid_token(db: Session, hashed_token):
+        return db.scalar(
+            select(EmailVerification).where(
+                EmailVerification.token_hash == hashed_token,
+                EmailVerification.used_at.is_(None),
+                EmailVerification.expires_at > datetime.now(timezone.utc),
             )
         )

@@ -3,13 +3,19 @@ from pydantic import ValidationError
 
 from di import auth_service, email_verification_service
 from exceptions.user import (
+    EmailSendError,
+    TokenVerificationError,
     UserAlreadyExistsError,
     UserAlreadyVerifiedError,
     UserNotFoundError,
 )
 from infrastructure.db import session
 
-from .auth_schema import RegisterRequest, SendNewValidationTokenRequest
+from .auth_schema import (
+    RegisterRequest,
+    SendNewValidationTokenRequest,
+    VerifyTokenRequest,
+)
 
 bp = Blueprint("users", __name__, url_prefix="/api/v1/auth")
 
@@ -62,10 +68,26 @@ def resend_verification():
         db.close()
 
 
-# TODO create route for validating user's email
-@bp.post("/validate")
-def validate_token():
-    return construct_response()
+@bp.post("/verify-email")
+def verify_token():
+    db = session()
+    try:
+        data = VerifyTokenRequest.model_validate((request.json))
+        email_verification_service.verify_token(db, data.token)
+        db.commit()
+        return construct_response(
+            message="Verification is successful", status=200
+        )
+    except ValidationError:
+        return construct_response(message="Validation error", status=400)
+    except TokenVerificationError:
+        return construct_response(message="Token invalid", status=400)
+    except Exception:
+        db.rollback()
+        current_app.logger.exception("Verify email error")
+        return construct_response(message="Internal server error", status=500)
+    finally:
+        db.close()
 
 
 @bp.post("/register")
@@ -78,11 +100,26 @@ def register():
             db, data.email, data.password
         )
         db.commit()
+
+        email_verification_service.send_verification_email(
+            user.email, raw_token
+        )
+        return construct_response(
+            message="User was created successfully",
+            data={"email_sent": True},
+            status=201,
+        )
     except ValidationError:
         return construct_response(message="Validation error", status=400)
     except UserAlreadyExistsError:
         return construct_response(
             message="User with such email already exists", status=409
+        )
+    except EmailSendError:
+        return construct_response(
+            message="User was created successfully",
+            data={"email_sent": False},
+            status=201,
         )
     except Exception:
         db.rollback()
@@ -90,17 +127,3 @@ def register():
         return construct_response(message="Internal server error", status=500)
     finally:
         db.close()
-
-    email_sent = False
-    try:
-        email_verification_service.send_verification_email(
-            user.email, raw_token
-        )
-        email_sent = True
-    except Exception:
-        current_app.logger.exception("Email send failed")
-
-    return construct_response(
-        data={"created_user": user.to_dict(), "email_sent": email_sent},
-        status=201,
-    )

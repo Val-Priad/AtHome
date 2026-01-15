@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 UserEmail = Annotated[EmailStr, Field(min_length=1, max_length=255)]
 Password = Annotated[str, Field(min_length=8, max_length=255)]
+Token = Annotated[str, Field(min_length=40, max_length=50)]
 
 
 class RegisterRequest(BaseModel):
@@ -20,3 +21,7 @@ class RegisterRequest(BaseModel):
 
 class SendNewValidationTokenRequest(BaseModel):
     email: UserEmail
+
+
+class VerifyTokenRequest(BaseModel):
+    token: Token

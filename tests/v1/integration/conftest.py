@@ -21,11 +21,9 @@ def client(app) -> FlaskClient:
 
 @pytest.fixture(autouse=True)
 def noop_send_verification_email(monkeypatch):
-    def _noop(self, email_to, token):
-        return None
-
     monkeypatch.setattr(
-        "infrastructure.email.Mailer.Mailer.send_verification_email", _noop
+        "infrastructure.email.Mailer.Mailer.send_verification_email",
+        lambda *args, **kwargs: None,
     )
 
 
