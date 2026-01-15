@@ -49,7 +49,7 @@ class EmailVerificationService:
         token_hash = hashlib.sha256(raw_token.encode()).digest()
 
         if invalidate_previous:
-            self.email_verification_repository.deactivate_previous_tokens(
+            self.email_verification_repository.deactivate_all_tokens(
                 db, user_id
             )
         self.email_verification_repository.add_token(
@@ -59,3 +59,7 @@ class EmailVerificationService:
 
     def get_resend_token(self, db: Session, user_id: uuid.UUID):
         return self.add_token(db, user_id, invalidate_previous=True)
+
+    def validate_token(self, db: Session, token):
+        # self.email_verification_repository.
+        pass
