@@ -62,7 +62,7 @@ def test_register_internal_error_rolls_back(client, db_session, monkeypatch):
         raise Exception("boom")
 
     monkeypatch.setattr(
-        "api.v1.auth.router.auth_service.add_user_and_token", boom
+        "api.v1.auth.auth_router.auth_service.add_user_and_token", boom
     )
 
     response = client.post(

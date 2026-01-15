@@ -118,7 +118,8 @@ def test_resend_verification_on_server_error_returns_500(
         raise Exception("boom")
 
     monkeypatch.setattr(
-        "api.v1.auth.router.email_verification_service.get_resend_token", boom
+        "api.v1.auth.auth_router.email_verification_service.get_resend_token",
+        boom,
     )
 
     response = client.post(

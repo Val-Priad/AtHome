@@ -37,7 +37,7 @@ def db_session(app: Flask, monkeypatch):
         db = session()
         db.begin_nested()
 
-        monkeypatch.setattr("api.v1.auth.router.session", lambda: db)
+        monkeypatch.setattr("api.v1.auth.auth_router.session", lambda: db)
 
         @event.listens_for(db, "after_transaction_end")
         def restart_savepoint(session, transaction_):
