@@ -76,7 +76,7 @@ class EmailVerificationService:
             db, self._get_hashed_token(raw_token)
         )
         if token is None:
-            raise TokenVerificationError
+            raise TokenVerificationError()
 
         token.used_at = datetime.now(timezone.utc)
 
