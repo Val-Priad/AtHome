@@ -1,18 +1,21 @@
 from flask import Blueprint, current_app, jsonify, request
+from flask_jwt_extended import create_access_token
 from pydantic import ValidationError
 
 from di import auth_service, email_verification_service
 from exceptions.user import (
     EmailSendError,
+    PasswordVerificationError,
     TokenVerificationError,
     UserAlreadyExistsError,
     UserAlreadyVerifiedError,
+    UserIsNotVerifiedError,
     UserNotFoundError,
 )
 from infrastructure.db import session
 
 from .auth_schema import (
-    RegisterRequest,
+    EmailPasswordRequest,
     SendNewValidationTokenRequest,
     VerifyTokenRequest,
 )
@@ -25,6 +28,40 @@ def construct_response(data=None, message="OK", status=200):
     if data is not None:
         payload["data"] = data
     return jsonify(payload), status
+
+
+@bp.post("/login")
+def login():
+    db = session()
+    try:
+        data = EmailPasswordRequest.model_validate(request.json)
+
+        user = auth_service.verify_password(db, data.email, data.password)
+
+        access_token = create_access_token(identity=user.id)
+        return construct_response(
+            data={"access_token": access_token},
+            message="Logged in successfully",
+            status=200,
+        )
+    except ValidationError:
+        return construct_response(message="Validation error", status=400)
+    except UserNotFoundError as e:
+        return construct_response(
+            message=f"There is no user with email {e.email}, register first",
+            status=400,
+        )
+    except UserIsNotVerifiedError:
+        return construct_response(
+            message="Verify your email before logging in", status=403
+        )
+    except PasswordVerificationError:
+        return construct_response(message="Invalid password", status=400)
+    except Exception:
+        current_app.logger.exception("Log in failed")
+        return construct_response(message="Internal server error", status=500)
+    finally:
+        db.close()
 
 
 @bp.post("/resend-verification")
@@ -94,7 +131,7 @@ def verify_token():
 def register():
     db = session()
     try:
-        data = RegisterRequest.model_validate(request.json)
+        data = EmailPasswordRequest.model_validate(request.json)
 
         user, raw_token = auth_service.add_user_and_token(
             db, data.email, data.password

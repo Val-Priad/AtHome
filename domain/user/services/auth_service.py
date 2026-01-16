@@ -6,7 +6,11 @@ from domain.email_verification.email_verification_service import (
 )
 from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
-from exceptions.user import UserAlreadyExistsError
+from exceptions.user import (
+    PasswordVerificationError,
+    UserAlreadyExistsError,
+    UserIsNotVerifiedError,
+)
 
 
 class AuthService:
@@ -34,3 +38,17 @@ class AuthService:
         )
 
         return user, raw_token
+
+    def get_user_by_email(self, db: Session, email: str):
+        return self.user_repository.get_user_by_email(db, email)
+
+    def verify_password(self, db: Session, email, password):
+        user = self.get_user_by_email(db, email)
+
+        if not user.is_email_verified:
+            raise UserIsNotVerifiedError()
+
+        if not bcrypt.checkpw(password.encode(), user.password_hash):
+            raise PasswordVerificationError()
+
+        return user

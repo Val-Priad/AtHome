@@ -7,7 +7,7 @@ Password = Annotated[str, Field(min_length=8, max_length=255)]
 Token = Annotated[str, Field(min_length=40, max_length=50)]
 
 
-class RegisterRequest(BaseModel):
+class EmailPasswordRequest(BaseModel):
     email: UserEmail
     password: Password
 

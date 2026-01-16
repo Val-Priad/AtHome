@@ -27,6 +27,11 @@ class UserAlreadyVerifiedError(DomainError):
         super().__init__(message)
 
 
+class UserIsNotVerifiedError(DomainError):
+    def __init__(self):
+        super().__init__("User must be verified")
+
+
 class TokenVerificationError(DomainError):
     def __init__(self):
         super().__init__("Invalid token")
@@ -35,3 +40,11 @@ class TokenVerificationError(DomainError):
 class EmailSendError(DomainError):
     def __init__(self):
         super().__init__("Error occurred while sending email")
+
+
+class PasswordVerificationError(DomainError):
+    def __init__(self):
+        super().__init__("Invalid password")
+
+
+# TODO remove email from exceptions to make them more simple
