@@ -1,17 +1,13 @@
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
 from pydantic import ValidationError
 
 from di import auth_service, email_verification_service
-from exceptions.user import (
-    EmailSendError,
-    PasswordVerificationError,
-    TokenVerificationError,
-    UserAlreadyExistsError,
-    UserAlreadyVerifiedError,
-    UserIsNotVerifiedError,
-    UserNotFoundError,
+from exceptions.error_catalog import (
+    get_code_for_exception,
+    get_description,
 )
+from exceptions.mailer_exceptions import EmailSendError
 from infrastructure.db import session
 
 from .auth_schema import (
@@ -30,6 +26,13 @@ def construct_response(data=None, message="OK", status=200):
     return jsonify(payload), status
 
 
+def construct_error(code: str):
+    description = get_description(code)
+    return jsonify(
+        {"error": {"code": code, "message": description.message}}
+    ), description.status
+
+
 @bp.post("/login")
 def login():
     db = session()
@@ -45,21 +48,10 @@ def login():
             status=200,
         )
     except ValidationError:
-        return construct_response(message="Validation error", status=400)
-    except UserNotFoundError as e:
-        return construct_response(
-            message=f"There is no user with email {e.email}, register first",
-            status=400,
-        )
-    except UserIsNotVerifiedError:
-        return construct_response(
-            message="Verify your email before logging in", status=403
-        )
-    except PasswordVerificationError:
-        return construct_response(message="Invalid password", status=400)
-    except Exception:
-        current_app.logger.exception("Log in failed")
-        return construct_response(message="Internal server error", status=500)
+        return construct_error("validation_error")
+    except Exception as e:
+        db.rollback()
+        return construct_error(get_code_for_exception(e))
     finally:
         db.close()
 
@@ -86,21 +78,10 @@ def resend_verification():
             message="Check your email for confirmation link", status=201
         )
     except ValidationError:
-        return construct_response(message="Validation error", status=400)
-    except UserNotFoundError as e:
-        return construct_response(
-            message=f"There is no user with email {e.email}, register first",
-            status=400,
-        )
-    except UserAlreadyVerifiedError as e:
-        return construct_response(
-            message=f"User with email {e.email} was already verified",
-            status=409,
-        )
-    except Exception:
+        return construct_error("validation_error")
+    except Exception as e:
         db.rollback()
-        current_app.logger.exception("Resend validation token error")
-        return construct_response(message="Internal server error", status=500)
+        return construct_error(get_code_for_exception(e))
     finally:
         db.close()
 
@@ -116,13 +97,10 @@ def verify_token():
             message="Verification is successful", status=200
         )
     except ValidationError:
-        return construct_response(message="Validation error", status=400)
-    except TokenVerificationError:
-        return construct_response(message="Token invalid", status=400)
-    except Exception:
+        return construct_error("validation_error")
+    except Exception as e:
         db.rollback()
-        current_app.logger.exception("Verify email error")
-        return construct_response(message="Internal server error", status=500)
+        return construct_error(get_code_for_exception(e))
     finally:
         db.close()
 
@@ -147,20 +125,15 @@ def register():
             status=201,
         )
     except ValidationError:
-        return construct_response(message="Validation error", status=400)
-    except UserAlreadyExistsError:
-        return construct_response(
-            message="User with such email already exists", status=409
-        )
+        return construct_error("validation_error")
     except EmailSendError:
         return construct_response(
             message="User was created successfully",
             data={"email_sent": False},
             status=201,
         )
-    except Exception:
+    except Exception as e:
         db.rollback()
-        current_app.logger.exception("User and token creation failed")
-        return construct_response(message="Internal server error", status=500)
+        return construct_error(get_code_for_exception(e))
     finally:
         db.close()

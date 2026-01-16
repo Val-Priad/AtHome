@@ -5,6 +5,7 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 
 from api.v1.auth.auth_router import bp as users_bp
+from exceptions import initialize_custom_exceptions  # noqa: F401
 from infrastructure.db import engine  # NOQA establishing connection with db
 
 load_dotenv()

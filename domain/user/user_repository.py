@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from exceptions.user import UserNotFoundError
+from exceptions.user_exceptions import UserNotFoundError
 
 from .user_model import User
 
@@ -25,6 +25,6 @@ class UserRepository:
         result = db.scalar(select(User).where(User.email == email))
 
         if result is None:
-            raise UserNotFoundError(email=email)
+            raise UserNotFoundError()
 
         return result

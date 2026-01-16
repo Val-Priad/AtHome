@@ -10,8 +10,8 @@ from domain.email_verification.email_verification_repository import (
 )
 from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
-from exceptions.user import (
-    EmailSendError,
+from exceptions.mailer_exceptions import EmailSendError
+from exceptions.user_exceptions import (
     TokenVerificationError,
     UserAlreadyVerifiedError,
 )
@@ -47,7 +47,7 @@ class EmailVerificationService:
     @staticmethod
     def check_user_is_not_verified(user: User):
         if user.is_email_verified:
-            raise UserAlreadyVerifiedError(user.email)
+            raise UserAlreadyVerifiedError()
 
     def add_token(
         self,

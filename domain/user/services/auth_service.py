@@ -6,7 +6,7 @@ from domain.email_verification.email_verification_service import (
 )
 from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
-from exceptions.user import (
+from exceptions.user_exceptions import (
     PasswordVerificationError,
     UserAlreadyExistsError,
     UserIsNotVerifiedError,
@@ -26,7 +26,7 @@ class AuthService:
         self, db: Session, email: str, password: str
     ) -> tuple[User, str]:
         if self.user_repository.exists_by_email(db, email):
-            raise UserAlreadyExistsError(email)
+            raise UserAlreadyExistsError()
 
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 

@@ -97,7 +97,10 @@ def test_resend_verification_if_user_not_found(client):
 
     assert response.status_code == 400
     body = response.get_json()
-    assert "There is no user with email" in body["message"]
+    assert body["error"] == {
+        "code": "user_not_found",
+        "message": "User not found",
+    }
 
 
 def test_resend_verification_if_user_already_verified(client, verified_user):
@@ -108,7 +111,10 @@ def test_resend_verification_if_user_already_verified(client, verified_user):
 
     assert response.status_code == 409
     body = response.get_json()
-    assert "was already verified" in body["message"]
+    assert body["error"] == {
+        "code": "user_already_verified",
+        "message": "User was already verified",
+    }
 
 
 def test_resend_verification_on_server_error_returns_500(

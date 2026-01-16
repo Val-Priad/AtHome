@@ -102,4 +102,7 @@ def test_token_verification_token_expired(
     assert response.status_code == 400
 
     body = response.get_json()
-    assert "Token invalid" in body["message"]
+    assert body["error"] == {
+        "code": "token_invalid",
+        "message": "Token invalid",
+    }
