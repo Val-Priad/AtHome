@@ -1,5 +1,10 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token
+from flask import Blueprint, Response, jsonify, make_response, request
+from flask_jwt_extended import (
+    create_access_token,
+    jwt_required,
+    set_access_cookies,
+    unset_jwt_cookies,
+)
 from pydantic import ValidationError
 
 from di import auth_service, email_verification_service
@@ -19,18 +24,19 @@ from .auth_schema import (
 bp = Blueprint("users", __name__, url_prefix="/api/v1/auth")
 
 
-def construct_response(data=None, message="OK", status=200):
+def construct_response(data=None, message="OK", status=200) -> Response:
     payload = {"message": message}
     if data is not None:
         payload["data"] = data
-    return jsonify(payload), status
+    return make_response(jsonify(payload), status)
 
 
-def construct_error(code: str):
+def construct_error(code: str) -> Response:
     description = get_description(code)
-    return jsonify(
-        {"error": {"code": code, "message": description.message}}
-    ), description.status
+    return make_response(
+        jsonify({"error": {"code": code, "message": description.message}}),
+        description.status,
+    )
 
 
 @bp.post("/login")
@@ -41,12 +47,13 @@ def login():
 
         user = auth_service.verify_password(db, data.email, data.password)
 
-        access_token = create_access_token(identity=user.id)
-        return construct_response(
-            data={"access_token": access_token},
+        access_token = create_access_token(identity=user.id, fresh=True)
+        response = construct_response(
             message="Logged in successfully",
             status=200,
         )
+        set_access_cookies(response, access_token)
+        return response
     except ValidationError:
         return construct_error("validation_error")
     except Exception as e:
@@ -54,6 +61,14 @@ def login():
         return construct_error(get_code_for_exception(e))
     finally:
         db.close()
+
+
+@bp.post("/logout")
+@jwt_required()
+def logout():
+    response = jsonify({"message": "Logout successful"})
+    unset_jwt_cookies(response)
+    return response
 
 
 @bp.post("/resend-verification")
