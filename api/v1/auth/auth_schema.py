@@ -25,3 +25,8 @@ class EmailRequest(BaseModel):
 
 class TokenRequest(BaseModel):
     token: Token
+
+
+class TokenPasswordRequest(BaseModel):
+    token: Token
+    password: Password

@@ -43,6 +43,7 @@ def test_resend_verification_valid(
     client, unverified_user, db_session, previous_token
 ):
     previous_token_id = previous_token.id
+    unverified_user_id = unverified_user.id
 
     response = client.post(
         "/api/v1/auth/resend-verification",
@@ -55,7 +56,7 @@ def test_resend_verification_valid(
         db_session.scalars(
             select(EmailVerification).where(
                 EmailVerification.expires_at > datetime.now(timezone.utc),
-                EmailVerification.user_id == unverified_user.id,
+                EmailVerification.user_id == unverified_user_id,
             )
         ).all()
     )
@@ -64,7 +65,7 @@ def test_resend_verification_valid(
     qty_of_tokens = len(
         db_session.scalars(
             select(EmailVerification).where(
-                EmailVerification.user_id == unverified_user.id,
+                EmailVerification.user_id == unverified_user_id,
             )
         ).all()
     )
@@ -73,7 +74,7 @@ def test_resend_verification_valid(
     deactivated_token = db_session.scalar(
         select(EmailVerification).where(
             EmailVerification.expires_at < datetime.now(timezone.utc),
-            EmailVerification.user_id == unverified_user.id,
+            EmailVerification.user_id == unverified_user_id,
         )
     )
 

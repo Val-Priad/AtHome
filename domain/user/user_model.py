@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from domain.email_verification.email_verification_model import (
         EmailVerification,
     )
+    from domain.password_reset.password_reset_model import PasswordReset
 
 
 class UserRole(enum.Enum):
@@ -61,6 +62,9 @@ class User(Base):
     )
 
     email_verifications: Mapped[list["EmailVerification"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    password_reset_tokens: Mapped[list["PasswordReset"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 

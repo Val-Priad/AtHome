@@ -30,3 +30,20 @@ class Mailer:
             "text": f"Welcome to our website,\nVerify your email by following the link:\n{verification_url}",
         }
         resend.Emails.send(params)  # type: ignore
+
+    def send_reset_password_email(self, email_to, token):
+        verification_url = (
+            f"{os.getenv('APP_BASE_URL')}/reset-password?token={token}"
+        )
+
+        template = self.env.get_template("password_reset.html")
+        html = template.render(verification_url=verification_url)
+
+        params = {
+            "from": self.FROM_EMAIL,
+            "to": [email_to],
+            "subject": "AtHome: Reset your password!",
+            "html": html,
+            "text": f"Reset your password by following the link:\n{verification_url}",
+        }
+        resend.Emails.send(params)  # type: ignore

@@ -1,7 +1,7 @@
 import pytest
+from sqlalchemy import select
 
 from domain.user.user_model import User
-from sqlalchemy import select
 
 
 @pytest.fixture()

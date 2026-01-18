@@ -1,4 +1,10 @@
-from flask import Blueprint, Response, jsonify, make_response, request
+from flask import (
+    Blueprint,
+    Response,
+    jsonify,
+    make_response,
+    request,
+)
 from flask_jwt_extended import (
     create_access_token,
     jwt_required,
@@ -7,18 +13,18 @@ from flask_jwt_extended import (
 )
 from pydantic import ValidationError
 
-from di import auth_service, email_verification_service
+from di import auth_service, email_verification_service, password_reset_service
 from exceptions.error_catalog import (
     get_code_for_exception,
     get_description,
 )
-from exceptions.mailer_exceptions import EmailSendError
 from infrastructure.db import session
 
 from .auth_schema import (
     EmailPasswordRequest,
-    SendNewValidationTokenRequest,
-    VerifyTokenRequest,
+    EmailRequest,
+    TokenPasswordRequest,
+    TokenRequest,
 )
 
 bp = Blueprint("users", __name__, url_prefix="/api/v1/auth")
@@ -48,24 +54,17 @@ def register():
         user, raw_token = auth_service.add_user_and_token(
             db, data.email, data.password
         )
-        db.commit()
 
         email_verification_service.send_verification_email(
             user.email, raw_token
         )
+        db.commit()
         return construct_response(
             message="User was created successfully",
-            data={"email_sent": True},
             status=201,
         )
     except ValidationError:
         return construct_error("validation_error")
-    except EmailSendError:
-        return construct_response(
-            message="User was created successfully",
-            data={"email_sent": False},
-            status=201,
-        )
     except Exception as e:
         db.rollback()
         return construct_error(get_code_for_exception(e))
@@ -77,7 +76,7 @@ def register():
 def verify_token():
     db = session()
     try:
-        data = VerifyTokenRequest.model_validate((request.json))
+        data = TokenRequest.model_validate((request.json))
         email_verification_service.verify_token(db, data.token)
         db.commit()
         return construct_response(
@@ -96,12 +95,9 @@ def verify_token():
 def resend_verification():
     db = session()
     try:
-        data = SendNewValidationTokenRequest.model_validate(request.json)
-
+        data = EmailRequest.model_validate(request.json)
         user = email_verification_service.get_user_by_email(db, data.email)
-
         email_verification_service.check_user_is_not_verified(user)
-
         raw_token = email_verification_service.get_resend_token(db, user.id)
 
         db.commit()
@@ -152,3 +148,46 @@ def logout():
     response = jsonify({"message": "Logout successful"})
     unset_jwt_cookies(response)
     return response
+
+
+@bp.post("/reset-password")
+def reset_password():
+    db = session()
+    try:
+        data = EmailRequest.model_validate(request.json)
+        user = password_reset_service.get_user_by_email(db, data.email)
+        raw_token = password_reset_service.get_token(db, user.id)
+
+        db.commit()
+
+        password_reset_service.send_reset_password_email(data.email, raw_token)
+
+        return construct_response(
+            message="Check your email for change password link", status=201
+        )
+    except ValidationError:
+        return construct_error("validation_error")
+    except Exception as e:
+        db.rollback()
+        return construct_error(get_code_for_exception(e))
+    finally:
+        db.close()
+
+
+@bp.post("/verify-new-password")
+def verify_new_password():
+    db = session()
+    try:
+        data = TokenPasswordRequest.model_validate(request.json)
+        password_reset_service.reset_password(db, data.token, data.password)
+        db.commit()
+        return construct_response(
+            message="Password reset successfully", status=200
+        )
+    except ValidationError:
+        return construct_error("validation_error")
+    except Exception as e:
+        db.rollback()
+        return construct_error(get_code_for_exception(e))
+    finally:
+        db.close()
