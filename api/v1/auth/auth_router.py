@@ -55,10 +55,12 @@ def register():
             db, data.email, data.password
         )
 
+        db.commit()
+
         email_verification_service.send_verification_email(
             user.email, raw_token
         )
-        db.commit()
+
         return construct_response(
             message="User was created successfully",
             status=201,
@@ -77,7 +79,9 @@ def verify_token():
     db = session()
     try:
         data = TokenRequest.model_validate((request.json))
+
         email_verification_service.verify_token(db, data.token)
+
         db.commit()
         return construct_response(
             message="Verification is successful", status=200
@@ -96,6 +100,7 @@ def resend_verification():
     db = session()
     try:
         data = EmailRequest.model_validate(request.json)
+
         user = email_verification_service.get_user_by_email(db, data.email)
         email_verification_service.check_user_is_not_verified(user)
         raw_token = email_verification_service.get_resend_token(db, user.id)
@@ -147,6 +152,7 @@ def login():
 def logout():
     response = jsonify({"message": "Logout successful"})
     unset_jwt_cookies(response)
+
     return response
 
 
@@ -155,6 +161,7 @@ def reset_password():
     db = session()
     try:
         data = EmailRequest.model_validate(request.json)
+
         user = password_reset_service.get_user_by_email(db, data.email)
         raw_token = password_reset_service.get_token(db, user.id)
 
@@ -179,7 +186,9 @@ def verify_new_password():
     db = session()
     try:
         data = TokenPasswordRequest.model_validate(request.json)
+
         password_reset_service.reset_password(db, data.token, data.password)
+
         db.commit()
         return construct_response(
             message="Password reset successfully", status=200
