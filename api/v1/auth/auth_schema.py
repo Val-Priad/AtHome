@@ -19,9 +19,9 @@ class EmailPasswordRequest(BaseModel):
         return value
 
 
-class SendNewValidationTokenRequest(BaseModel):
+class EmailRequest(BaseModel):
     email: UserEmail
 
 
-class VerifyTokenRequest(BaseModel):
+class TokenRequest(BaseModel):
     token: Token
