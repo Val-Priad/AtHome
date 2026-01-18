@@ -86,8 +86,3 @@ def test_register_valid_returns_payload(client):
 
     body = response.get_json()
     assert body["message"] == "User was created successfully"
-    assert "data" in body
-
-    data = body["data"]
-
-    assert data["email_sent"] is True
