@@ -27,7 +27,7 @@ from .auth_schema import (
     TokenRequest,
 )
 
-bp = Blueprint("users", __name__, url_prefix="/api/v1/auth")
+bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 
 def construct_response(data=None, message="OK", status=200) -> Response:
