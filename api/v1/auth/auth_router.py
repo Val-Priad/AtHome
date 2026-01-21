@@ -1,8 +1,6 @@
 from flask import (
     Blueprint,
-    Response,
     jsonify,
-    make_response,
     request,
 )
 from flask_jwt_extended import (
@@ -13,10 +11,10 @@ from flask_jwt_extended import (
 )
 from pydantic import ValidationError
 
+from api.v1.responses import construct_error, construct_response
 from di import auth_service, email_verification_service, password_reset_service
 from exceptions.error_catalog import (
     get_code_for_exception,
-    get_description,
 )
 from infrastructure.db import session
 
@@ -28,21 +26,6 @@ from .auth_schema import (
 )
 
 bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
-
-
-def construct_response(data=None, message="OK", status=200) -> Response:
-    payload = {"message": message}
-    if data is not None:
-        payload["data"] = data
-    return make_response(jsonify(payload), status)
-
-
-def construct_error(code: str) -> Response:
-    description = get_description(code)
-    return make_response(
-        jsonify({"error": {"code": code, "message": description.message}}),
-        description.status,
-    )
 
 
 @bp.post("/register")
