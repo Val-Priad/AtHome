@@ -11,7 +11,7 @@ from flask_jwt_extended import (
     set_access_cookies,
 )
 
-from api.v1.auth.auth_router import bp as users_bp
+from api.v1.auth.auth_router import bp as auth_bp
 from exceptions import initialize_custom_exceptions  # noqa: F401
 from infrastructure.db import engine  # NOQA establishing connection with db
 
@@ -47,4 +47,4 @@ def refresh_expiring_jwts(response):
         return response
 
 
-app.register_blueprint(users_bp)
+app.register_blueprint(auth_bp)
