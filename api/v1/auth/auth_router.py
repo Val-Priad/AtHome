@@ -17,8 +17,7 @@ from exceptions.error_catalog import (
     get_code_for_exception,
 )
 from infrastructure.db import session
-
-from .auth_schema import (
+from schemas.auth_schema import (
     EmailPasswordRequest,
     EmailRequest,
     TokenPasswordRequest,
@@ -34,8 +33,11 @@ def register():
     try:
         data = EmailPasswordRequest.model_validate(request.json)
 
-        user, raw_token = auth_service.add_user_and_token(
-            db, data.email, data.password
+        user = auth_service.add_user_and_token(db, data.email, data.password)
+
+        raw_token = email_verification_service.add_token(
+            db,
+            user.id,
         )
 
         db.commit()

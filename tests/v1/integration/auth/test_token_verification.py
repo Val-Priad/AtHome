@@ -4,13 +4,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 
-from domain.email_verification.email_verification_model import (
+from domain.email_verification import (
     EmailVerification,
 )
-from domain.email_verification.email_verification_service import (
-    EmailVerificationService,
-)
-from domain.user.user_model import User
+from domain.user import User
+from security import TokenHasher
 
 
 @pytest.fixture
@@ -20,7 +18,7 @@ def raw_token_verification_id_user_id(db_session):
     db_session.flush()
 
     raw_token = secrets.token_urlsafe(32)
-    hashed_token = EmailVerificationService._get_hashed_token(raw_token)
+    hashed_token = TokenHasher.hash_token(raw_token)
     email_verification = EmailVerification(
         user_id=user.id,
         token_hash=hashed_token,
@@ -38,7 +36,7 @@ def expired_raw_token_verification_id_user_id(db_session):
     db_session.flush()
 
     raw_token = secrets.token_urlsafe(32)
-    hashed_token = EmailVerificationService._get_hashed_token(raw_token)
+    hashed_token = TokenHasher.hash_token(raw_token)
     email_verification = EmailVerification(
         user_id=user.id,
         token_hash=hashed_token,

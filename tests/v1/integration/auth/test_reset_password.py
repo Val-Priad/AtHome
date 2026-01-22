@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 
-from domain.password_reset.password_reset_model import PasswordReset
-from domain.user.user_model import User
+from domain.password_reset import PasswordReset
+from domain.user import User
 
 
 @pytest.fixture

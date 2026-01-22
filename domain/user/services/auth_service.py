@@ -1,43 +1,34 @@
-import bcrypt
 from sqlalchemy.orm import Session
 
-from domain.email_verification.email_verification_service import (
-    EmailVerificationService,
-)
-from domain.user.user_model import User
-from domain.user.user_repository import UserRepository
-from exceptions.user_exceptions import (
+from domain.user import User, UserRepository
+from exceptions import (
     PasswordVerificationError,
     UserAlreadyExistsError,
     UserIsNotVerifiedError,
 )
+from security import PasswordHasher
 
 
 class AuthService:
     def __init__(
         self,
         user_repository: UserRepository,
-        email_verification_service: EmailVerificationService,
+        password_hasher: PasswordHasher,
     ):
         self.user_repository = user_repository
-        self.email_verification_service = email_verification_service
+        self.password_hasher = password_hasher
 
     def add_user_and_token(
         self, db: Session, email: str, password: str
-    ) -> tuple[User, str]:
+    ) -> User:
         if self.user_repository.exists_by_email(db, email):
             raise UserAlreadyExistsError()
 
-        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+        hashed_password = self.password_hasher.hash_password(password)
 
         user = self.user_repository.add_user(db, email, hashed_password)
 
-        raw_token = self.email_verification_service.add_token(
-            db,
-            user.id,
-        )
-
-        return user, raw_token
+        return user
 
     def get_user_by_email(self, db: Session, email: str):
         return self.user_repository.get_user_by_email(db, email)
@@ -48,7 +39,7 @@ class AuthService:
         if not user.is_email_verified:
             raise UserIsNotVerifiedError()
 
-        if not bcrypt.checkpw(password.encode(), user.password_hash):
+        if not self.password_hasher.is_verified(password, user.password_hash):
             raise PasswordVerificationError()
 
         return user

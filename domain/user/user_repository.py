@@ -1,9 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from domain.user import User
 from exceptions.user_exceptions import UserNotFoundError
-
-from .user_model import User
 
 
 class UserRepository:
