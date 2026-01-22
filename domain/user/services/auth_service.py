@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
 from exceptions import (
-    PasswordVerificationError,
     UserAlreadyExistsError,
     UserIsNotVerifiedError,
 )
@@ -40,7 +39,6 @@ class AuthService:
         if not user.is_email_verified:
             raise UserIsNotVerifiedError()
 
-        if not self.password_hasher.is_verified(password, user.password_hash):
-            raise PasswordVerificationError()
+        self.password_hasher.check_password(password, user.password_hash)
 
         return user

@@ -25,6 +25,10 @@ class PasswordVerificationError(DomainError):
     pass
 
 
+class NewPasswordMatchesOld(DomainError):
+    pass
+
+
 def _register_user_errors():
     register_custom_error(
         UserNotFoundError, "user_not_found", 400, "User not found"
@@ -57,6 +61,13 @@ def _register_user_errors():
         "user_already_exists",
         409,
         "User with such email already exists",
+    )
+
+    register_custom_error(
+        NewPasswordMatchesOld,
+        "new_password_matches_old",
+        409,
+        "New password must be different from the old password",
     )
 
 

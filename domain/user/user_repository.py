@@ -1,4 +1,6 @@
-from sqlalchemy import select
+from uuid import UUID
+
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from domain.user.user_model import User
@@ -27,3 +29,20 @@ class UserRepository:
             raise UserNotFoundError()
 
         return result
+
+    @staticmethod
+    def get_user_by_id(db: Session, user_id: UUID):
+        result = db.scalar(select(User).where(User.id == user_id))
+
+        if result is None:
+            raise UserNotFoundError()
+
+        return result
+
+    @staticmethod
+    def update_password(db: Session, user_id: UUID, password: bytes):
+        db.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(password_hash=password)
+        )

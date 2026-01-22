@@ -4,4 +4,5 @@ from .types import Password
 
 
 class PasswordRequest(BaseModel):
-    password: Password
+    old_password: Password
+    new_password: Password

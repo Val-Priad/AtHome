@@ -1,5 +1,7 @@
 import bcrypt
 
+from exceptions import PasswordVerificationError
+
 
 class PasswordHasher:
     @staticmethod
@@ -7,5 +9,6 @@ class PasswordHasher:
         return bcrypt.hashpw(raw_password.encode(), bcrypt.gensalt())
 
     @staticmethod
-    def is_verified(raw_password: str, hashed_password: bytes) -> bool:
-        return bcrypt.checkpw(raw_password.encode(), hashed_password)
+    def check_password(raw_password: str, hashed_password: bytes) -> None:
+        if not bcrypt.checkpw(raw_password.encode(), hashed_password):
+            raise PasswordVerificationError()

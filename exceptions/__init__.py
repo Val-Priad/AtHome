@@ -1,6 +1,7 @@
 from .error_catalog import get_code_for_exception, get_description
 from .mailer_exceptions import EmailSendError
 from .user_exceptions import (
+    NewPasswordMatchesOld,
     PasswordVerificationError,
     TokenVerificationError,
     UserAlreadyExistsError,
@@ -19,4 +20,5 @@ __all__ = [
     "TokenVerificationError",
     "PasswordVerificationError",
     "EmailSendError",
+    "NewPasswordMatchesOld",
 ]
