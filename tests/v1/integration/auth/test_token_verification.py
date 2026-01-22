@@ -4,10 +4,10 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 
-from domain.email_verification import (
+from domain.email_verification.email_verification_model import (
     EmailVerification,
 )
-from domain.user import User
+from domain.user.user_model import User
 from security import TokenHasher
 
 

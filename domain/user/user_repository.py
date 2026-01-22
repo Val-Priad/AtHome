@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from domain.user import User
+from domain.user.user_model import User
 from exceptions.user_exceptions import UserNotFoundError
 
 

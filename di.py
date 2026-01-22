@@ -1,15 +1,15 @@
-from domain.email_verification import (
+from domain.email_verification.email_verification_repository import (
     EmailVerificationRepository,
 )
 from domain.email_verification.email_verification_service import (
     EmailVerificationService,
 )
-from domain.password_reset import (
+from domain.password_reset.password_reset_repository import (
     PasswordResetRepository,
 )
 from domain.password_reset.password_reset_service import PasswordResetService
-from domain.user import UserRepository
 from domain.user.services.auth_service import AuthService
+from domain.user.user_repository import UserRepository
 from infrastructure.email.Mailer import Mailer
 from security import PasswordHasher, TokenHasher
 

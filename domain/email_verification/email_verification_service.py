@@ -3,10 +3,11 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from domain.email_verification import (
+from domain.email_verification.email_verification_repository import (
     EmailVerificationRepository,
 )
-from domain.user import User, UserRepository
+from domain.user.user_model import User
+from domain.user.user_repository import UserRepository
 from exceptions import (
     EmailSendError,
     TokenVerificationError,

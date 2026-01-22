@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from domain.email_verification import (
+from domain.email_verification.email_verification_model import (
     EmailVerification,
 )
 

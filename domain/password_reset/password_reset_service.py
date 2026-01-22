@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from domain.password_reset import (
+from domain.password_reset.password_reset_repository import (
     PasswordResetRepository,
 )
 from domain.user.user_repository import UserRepository

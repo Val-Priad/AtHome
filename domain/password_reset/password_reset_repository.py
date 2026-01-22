@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from domain.password_reset import PasswordReset
+from domain.password_reset.password_reset_model import PasswordReset
 
 
 class PasswordResetRepository:
