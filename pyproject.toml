@@ -11,6 +11,7 @@ dependencies = [
     "flask-jwt-extended>=4.7.1",
     "isort>=7.0.0",
     "jinja2>=3.1.6",
+    "phonenumbers>=9.0.22",
     "psycopg2-binary>=2.9.11",
     "pydantic-extra-types>=2.11.0",
     "pydantic[email]>=2.12.5",
