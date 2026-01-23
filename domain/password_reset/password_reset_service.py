@@ -9,7 +9,7 @@ from domain.password_reset.password_reset_repository import (
 from domain.user.user_repository import UserRepository
 from exceptions import EmailSendError, TokenVerificationError
 from infrastructure.email.Mailer import Mailer
-from security import PasswordHasher, TokenHasher
+from security import PasswordCrypto, TokenCrypto
 
 
 class PasswordResetService:
@@ -18,8 +18,8 @@ class PasswordResetService:
         password_reset_repository: PasswordResetRepository,
         user_repository: UserRepository,
         mailer: Mailer,
-        token_hasher: TokenHasher,
-        password_hasher: PasswordHasher,
+        token_hasher: TokenCrypto,
+        password_hasher: PasswordCrypto,
     ):
         self.password_reset_repository = password_reset_repository
         self.user_repository = user_repository

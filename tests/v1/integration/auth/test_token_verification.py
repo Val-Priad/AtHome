@@ -8,7 +8,7 @@ from domain.email_verification.email_verification_model import (
     EmailVerification,
 )
 from domain.user.user_model import User
-from security import TokenHasher
+from security import TokenCrypto
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def raw_token_verification_id_user_id(db_session):
     db_session.flush()
 
     raw_token = secrets.token_urlsafe(32)
-    hashed_token = TokenHasher.hash_token(raw_token)
+    hashed_token = TokenCrypto.hash_token(raw_token)
     email_verification = EmailVerification(
         user_id=user.id,
         token_hash=hashed_token,
@@ -36,7 +36,7 @@ def expired_raw_token_verification_id_user_id(db_session):
     db_session.flush()
 
     raw_token = secrets.token_urlsafe(32)
-    hashed_token = TokenHasher.hash_token(raw_token)
+    hashed_token = TokenCrypto.hash_token(raw_token)
     email_verification = EmailVerification(
         user_id=user.id,
         token_hash=hashed_token,

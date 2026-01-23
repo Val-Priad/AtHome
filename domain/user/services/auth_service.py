@@ -6,14 +6,14 @@ from exceptions import (
     UserAlreadyExistsError,
     UserIsNotVerifiedError,
 )
-from security import PasswordHasher
+from security import PasswordCrypto
 
 
 class AuthService:
     def __init__(
         self,
         user_repository: UserRepository,
-        password_hasher: PasswordHasher,
+        password_hasher: PasswordCrypto,
     ):
         self.user_repository = user_repository
         self.password_hasher = password_hasher
@@ -39,6 +39,6 @@ class AuthService:
         if not user.is_email_verified:
             raise UserIsNotVerifiedError()
 
-        self.password_hasher.check_password(password, user.password_hash)
+        self.password_hasher.verify_password(password, user.password_hash)
 
         return user

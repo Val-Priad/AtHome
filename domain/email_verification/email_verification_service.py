@@ -14,7 +14,7 @@ from exceptions import (
     UserAlreadyVerifiedError,
 )
 from infrastructure.email.Mailer import Mailer
-from security import TokenHasher
+from security import TokenCrypto
 
 
 class EmailVerificationService:
@@ -23,7 +23,7 @@ class EmailVerificationService:
         email_verification_repository: EmailVerificationRepository,
         user_repository: UserRepository,
         mailer: Mailer,
-        token_hasher: TokenHasher,
+        token_hasher: TokenCrypto,
     ):
         self.email_verification_repository = email_verification_repository
         self.user_repository = user_repository

@@ -12,14 +12,14 @@ from domain.user.services.auth_service import AuthService
 from domain.user.services.me_service import MeService
 from domain.user.user_repository import UserRepository
 from infrastructure.email.Mailer import Mailer
-from security import PasswordHasher, TokenHasher
+from security import PasswordCrypto, TokenCrypto
 
 # EXTERNAL
 mailer = Mailer()
 
 # INTERNAL
-password_hasher = PasswordHasher()
-token_hasher = TokenHasher()
+password_hasher = PasswordCrypto()
+token_hasher = TokenCrypto()
 
 # DOMAIN RELATED
 user_repository = UserRepository()

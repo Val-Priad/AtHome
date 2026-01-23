@@ -1,4 +1,4 @@
-from .password_hasher import PasswordHasher
-from .token_hasher import TokenHasher
+from .password_crypto import PasswordCrypto
+from .token_crypto import TokenCrypto
 
-__all__ = ["PasswordHasher", "TokenHasher"]
+__all__ = ["PasswordCrypto", "TokenCrypto"]

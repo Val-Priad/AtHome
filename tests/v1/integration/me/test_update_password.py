@@ -3,7 +3,7 @@ from sqlalchemy import select
 
 from domain.user.user_model import User
 from exceptions import PasswordVerificationError
-from security.password_hasher import PasswordHasher
+from security.password_crypto import PasswordCrypto
 
 
 def test_update_user_password(client, db_session, logged_in_user):
@@ -24,11 +24,11 @@ def test_update_user_password(client, db_session, logged_in_user):
     )
 
     with pytest.raises(PasswordVerificationError):
-        PasswordHasher.check_password(
+        PasswordCrypto.verify_password(
             logged_in_user["password"], user.password_hash
         )
 
-    PasswordHasher.check_password(new_password, user.password_hash)
+    PasswordCrypto.verify_password(new_password, user.password_hash)
 
 
 def test_update_user_password_old_password_matches_new(client, logged_in_user):

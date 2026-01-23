@@ -4,12 +4,12 @@ from sqlalchemy.orm import Session
 
 from domain.user.user_repository import UserRepository
 from exceptions import NewPasswordMatchesOld
-from security import PasswordHasher
+from security import PasswordCrypto
 
 
 class MeService:
     def __init__(
-        self, user_repository: UserRepository, password_hasher: PasswordHasher
+        self, user_repository: UserRepository, password_hasher: PasswordCrypto
     ):
         self.user_repository = user_repository
         self.password_hasher = password_hasher
@@ -28,4 +28,4 @@ class MeService:
         self, db: Session, user_id: UUID, raw_password: str
     ) -> None:
         user = self.user_repository.get_user_by_id(db, user_id)
-        self.password_hasher.check_password(raw_password, user.password_hash)
+        self.password_hasher.verify_password(raw_password, user.password_hash)
