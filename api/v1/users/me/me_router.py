@@ -6,7 +6,7 @@ from api.v1.responses import construct_error, construct_response
 from di import me_service
 from exceptions.error_catalog import get_code_for_exception
 from infrastructure.db import session
-from schemas.me_schema import PasswordRequest
+from schemas.me_schemas import PasswordRequest
 
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 

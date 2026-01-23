@@ -3,14 +3,7 @@ import enum
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import (
-    Boolean,
-    DateTime,
-    Enum,
-    LargeBinary,
-    String,
-    func,
-)
+from sqlalchemy import Boolean, DateTime, Enum, LargeBinary, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -49,7 +42,7 @@ class User(Base):
     )
     name: Mapped[str | None] = mapped_column(String(255))
     phone_number: Mapped[str | None] = mapped_column(String(255))
-    avatar: Mapped[str | None] = mapped_column(String(255))
+    avatar_key: Mapped[str | None] = mapped_column(Text)
     description: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), default=func.now(), nullable=False
@@ -75,7 +68,7 @@ class User(Base):
             "role": self.role.value,
             "name": self.name,
             "phone_number": self.phone_number,
-            "avatar": self.avatar,
+            "avatar": self.avatar_key,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at,

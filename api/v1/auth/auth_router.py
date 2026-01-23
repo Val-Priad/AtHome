@@ -17,7 +17,7 @@ from exceptions.error_catalog import (
     get_code_for_exception,
 )
 from infrastructure.db import session
-from schemas.auth_schema import (
+from schemas.auth_schemas import (
     EmailPasswordRequest,
     EmailRequest,
     TokenPasswordRequest,
