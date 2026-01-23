@@ -1,10 +1,11 @@
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
-from sqlalchemy import event
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import event, select
+from sqlalchemy.orm import Session, sessionmaker
 
 from app import app as flask_app
+from domain.user.user_model import User
 from infrastructure.db import engine
 
 
@@ -38,6 +39,7 @@ def db_session(app: Flask, monkeypatch):
         db.begin_nested()
 
         monkeypatch.setattr("api.v1.auth.auth_router.session", lambda: db)
+        monkeypatch.setattr("api.v1.users.me.me_router.session", lambda: db)
 
         @event.listens_for(db, "after_transaction_end")
         def restart_savepoint(session, transaction_):
@@ -49,3 +51,29 @@ def db_session(app: Flask, monkeypatch):
         db.close()
         transaction.rollback()
         connection.close()
+
+
+@pytest.fixture
+def logged_in_user(client: FlaskClient, db_session: Session):
+    email = "user@example.com"
+    password = "12345678"
+    payload = {"email": email, "password": password}
+    register_response = client.post("/api/v1/auth/register", json=payload)
+    assert register_response.status_code == 201
+
+    user = db_session.scalar(select(User).where(User.email == email))
+    assert user is not None
+    user.is_email_verified = True
+    db_session.flush()
+
+    login_response = client.post("/api/v1/auth/login", json=payload)
+    assert login_response.status_code == 200
+
+    cookie = client.get_cookie("csrf_access_token")
+    assert cookie is not None
+
+    return {
+        "email": email,
+        "password": password,
+        "headers": {"X-CSRF-TOKEN": cookie.value},
+    }
