@@ -2,6 +2,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from conftest import API_PREFIX, AUTH_ENDPOINT_PATH
 from sqlalchemy import select
 
 from domain.password_reset.password_reset_model import PasswordReset
@@ -35,7 +36,7 @@ def set_token(db_session):
 
 def test_verify_new_password_valid(client, set_token, db_session):
     response = client.post(
-        "/api/v1/auth/verify-new-password",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
         json={
             "token": set_token["raw_token"],
             "password": "new_password",
@@ -61,7 +62,7 @@ def test_verify_new_password_valid(client, set_token, db_session):
     assert datetime.now(timezone.utc) > password_reset.used_at
 
     response = client.post(
-        "/api/v1/auth/verify-new-password",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
         json={
             "token": set_token["raw_token"],
             "password": "111111111111111",
@@ -73,7 +74,7 @@ def test_verify_new_password_valid(client, set_token, db_session):
 
 def test_verify_new_password_validation(client, set_token, db_session):
     response = client.post(
-        "/api/v1/auth/verify-new-password",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
         json={
             "token": set_token["raw_token"],
         },
@@ -82,21 +83,21 @@ def test_verify_new_password_validation(client, set_token, db_session):
     assert response.status_code == 400
 
     response = client.post(
-        "/api/v1/auth/verify-new-password",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
         json={"token": set_token["raw_token"], "password": ""},
     )
 
     assert response.status_code == 400
 
     response = client.post(
-        "/api/v1/auth/verify-new-password",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
         json={"password": "valid_password"},
     )
 
     assert response.status_code == 400
 
     response = client.post(
-        "/api/v1/auth/verify-new-password",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
         json={"password": "valid_password", "token": "invalid_token"},
     )
 

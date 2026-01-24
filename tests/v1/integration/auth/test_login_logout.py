@@ -1,4 +1,5 @@
 import pytest
+from conftest import API_PREFIX, AUTH_ENDPOINT_PATH
 from sqlalchemy import select
 
 from domain.user.user_model import User
@@ -9,7 +10,7 @@ def verified_user(db_session, client):
     email = "user@example.com"
     password = "12345678"
     response = client.post(
-        "api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": email, "password": password},
     )
     assert response.status_code == 201
@@ -22,7 +23,7 @@ def verified_user(db_session, client):
 
 def test_login_and_log_out(client, verified_user):
     login_response = client.post(
-        "api/v1/auth/login",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/login",
         json={
             "email": verified_user["email"],
             "password": verified_user["password"],
@@ -33,6 +34,7 @@ def test_login_and_log_out(client, verified_user):
     csrf = client.get_cookie("csrf_access_token").value
 
     logout_response = client.post(
-        "/api/v1/auth/logout", headers={"X-CSRF-TOKEN": csrf}
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/logout",
+        headers={"X-CSRF-TOKEN": csrf},
     )
     assert logout_response.status_code == 200

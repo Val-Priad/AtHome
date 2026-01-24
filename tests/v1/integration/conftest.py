@@ -9,6 +9,8 @@ from domain.user.user_model import User
 from infrastructure.db import engine
 
 API_PREFIX = "/api/v1"
+AUTH_ENDPOINT_PATH = "/auth"
+ME_ENDPOINT_PATH = "/users/me"
 
 
 @pytest.fixture

@@ -1,11 +1,9 @@
-from conftest import API_PREFIX
-
-from tests.v1.integration.me.me_endpoint import ENDPOINT_PATH
+from conftest import API_PREFIX, ME_ENDPOINT_PATH
 
 
 def test_update_user_personal_data_valid(client, logged_in_user):
     response = client.patch(
-        f"{API_PREFIX}{ENDPOINT_PATH}/update-personal-data",
+        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={
             "name": None,
             "avatar_key": None,
@@ -25,7 +23,7 @@ def test_update_user_personal_data_valid(client, logged_in_user):
 
 def test_update_user_personal_data_partially_valid(client, logged_in_user):
     response = client.patch(
-        f"{API_PREFIX}{ENDPOINT_PATH}/update-personal-data",
+        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={
             "avatar_key": None,
             "phone_number": None,
@@ -44,7 +42,7 @@ def test_update_user_personal_data_partially_valid(client, logged_in_user):
 
 def test_update_user_personal_data_partially2_valid(client, logged_in_user):
     response = client.patch(
-        f"{API_PREFIX}{ENDPOINT_PATH}/update-personal-data",
+        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={
             "phone_number": None,
             "description": None,
@@ -62,7 +60,7 @@ def test_update_user_personal_data_partially2_valid(client, logged_in_user):
 
 def test_update_user_personal_data_name_is_trimmed(client, logged_in_user):
     response = client.patch(
-        f"{API_PREFIX}{ENDPOINT_PATH}/update-personal-data",
+        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={"name": "Val Priad           "},
         headers=logged_in_user["headers"],
     )
@@ -74,7 +72,7 @@ def test_update_user_personal_data_name_is_trimmed(client, logged_in_user):
 
 def test_update_user_personal_data_with_no_data(client, logged_in_user):
     response = client.patch(
-        f"{API_PREFIX}{ENDPOINT_PATH}/update-personal-data",
+        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={},
         headers=logged_in_user["headers"],
     )
@@ -83,7 +81,7 @@ def test_update_user_personal_data_with_no_data(client, logged_in_user):
 
 def test_update_user_personal_data_with_invalid_phone(client, logged_in_user):
     response = client.patch(
-        f"{API_PREFIX}{ENDPOINT_PATH}/update-personal-data",
+        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={"phone_number": "invalid_phone"},
         headers=logged_in_user["headers"],
     )
@@ -92,7 +90,7 @@ def test_update_user_personal_data_with_invalid_phone(client, logged_in_user):
 
 def test_update_user_personal_data_email(client, logged_in_user):
     response = client.patch(
-        f"{API_PREFIX}{ENDPOINT_PATH}/update-personal-data",
+        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={"email": "hacker@gmail.com"},
         headers=logged_in_user["headers"],
     )

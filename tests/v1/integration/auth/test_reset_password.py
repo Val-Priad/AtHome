@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from conftest import API_PREFIX, AUTH_ENDPOINT_PATH
 from sqlalchemy import select
 
 from domain.password_reset.password_reset_model import PasswordReset
@@ -26,7 +27,8 @@ def any_user(db_session):
 
 def test_reset_password_token_valid(client, any_user, db_session):
     response = client.post(
-        "/api/v1/auth/reset-password", json={"email": any_user["user_email"]}
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/reset-password",
+        json={"email": any_user["user_email"]},
     )
 
     assert response.status_code == 201
@@ -53,7 +55,8 @@ def test_reset_password_token_valid(client, any_user, db_session):
 
 def test_reset_password_token_no_user(client):
     response = client.post(
-        "/api/v1/auth/reset-password", json={"email": "user@example.com"}
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/reset-password",
+        json={"email": "user@example.com"},
     )
 
     assert response.status_code == 400
@@ -61,7 +64,7 @@ def test_reset_password_token_no_user(client):
 
 def test_reset_password_token_invalid_email(client):
     response = client.post(
-        "/api/v1/auth/resend-verification",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/resend-verification",
         json={"email": "invalid_email"},
     )
 

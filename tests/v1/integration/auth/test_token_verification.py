@@ -2,6 +2,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from conftest import API_PREFIX, AUTH_ENDPOINT_PATH
 from sqlalchemy import select
 
 from domain.email_verification.email_verification_model import (
@@ -57,7 +58,8 @@ def test_token_verification_valid(
     now = datetime.now(timezone.utc)
 
     response = client.post(
-        "api/v1/auth/verify-email", json={"token": raw_token}
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email",
+        json={"token": raw_token},
     )
     assert response.status_code == 200
 
@@ -78,14 +80,19 @@ def test_token_verification_token_validation(client):
 
     too_long = "" * 55
     response = client.post(
-        "api/v1/auth/verify-email", json={"token": too_long}
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email",
+        json={"token": too_long},
     )
     assert response.status_code == 400
 
-    response = client.post("api/v1/auth/verify-email", json={"token": 67})
+    response = client.post(
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email", json={"token": 67}
+    )
     assert response.status_code == 400
 
-    response = client.post("api/v1/auth/verify-email", json={})
+    response = client.post(
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email", json={}
+    )
     assert response.status_code == 400
 
 
@@ -95,7 +102,8 @@ def test_token_verification_token_expired(
     raw_token, _, _ = expired_raw_token_verification_id_user_id
 
     response = client.post(
-        "api/v1/auth/verify-email", json={"token": raw_token}
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email",
+        json={"token": raw_token},
     )
     assert response.status_code == 400
 

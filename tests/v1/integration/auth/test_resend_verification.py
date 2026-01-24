@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from conftest import API_PREFIX, AUTH_ENDPOINT_PATH
 from sqlalchemy import select
 
 from domain.email_verification.email_verification_model import (
@@ -46,7 +47,7 @@ def test_resend_verification_valid(
     unverified_user_id = unverified_user.id
 
     response = client.post(
-        "/api/v1/auth/resend-verification",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/resend-verification",
         json={"email": unverified_user.email},
     )
 
@@ -83,7 +84,7 @@ def test_resend_verification_valid(
 
 def test_resend_verification_validation(client):
     response = client.post(
-        "/api/v1/auth/resend-verification",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/resend-verification",
         json={"email": "invalid_email"},
     )
 
@@ -92,7 +93,7 @@ def test_resend_verification_validation(client):
 
 def test_resend_verification_if_user_not_found(client):
     response = client.post(
-        "/api/v1/auth/resend-verification",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/resend-verification",
         json={"email": "user_does_not_exist@example.com"},
     )
 
@@ -106,7 +107,7 @@ def test_resend_verification_if_user_not_found(client):
 
 def test_resend_verification_if_user_already_verified(client, verified_user):
     response = client.post(
-        "/api/v1/auth/resend-verification",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/resend-verification",
         json={"email": verified_user.email},
     )
 
@@ -130,7 +131,7 @@ def test_resend_verification_on_server_error_returns_500(
     )
 
     response = client.post(
-        "/api/v1/auth/resend-verification",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/resend-verification",
         json={"email": unverified_user.email},
     )
 

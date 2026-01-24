@@ -1,6 +1,9 @@
+from conftest import API_PREFIX, AUTH_ENDPOINT_PATH
+
+
 def test_register_valid(client):
     response = client.post(
-        "/api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": "user@example.com", "password": "some_password"},
     )
     assert response.status_code == 201
@@ -8,7 +11,7 @@ def test_register_valid(client):
 
 def test_register_user_already_exists(client):
     payload = {"email": "user@example.com", "password": "some_password"}
-    client.post("/api/v1/auth/register", json=payload)
+    client.post(f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register", json=payload)
     response = client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 409
 
@@ -16,35 +19,35 @@ def test_register_user_already_exists(client):
 def test_register_user_validation_error(client):
     # invalid email format
     response = client.post(
-        "/api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": "imposter", "password": "valid_password"},
     )
     assert response.status_code == 400
 
     # invalid password (after strip)
     response = client.post(
-        "/api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": "user@example.com", "password": "       "},
     )
     assert response.status_code == 400
 
     # missing password
     response = client.post(
-        "/api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": "user@example.com"},
     )
     assert response.status_code == 400
 
     # missing email
     response = client.post(
-        "/api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"password": "valid_password"},
     )
     assert response.status_code == 400
 
     # invalid types
     response = client.post(
-        "/api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": 6, "password": 7},
     )
     assert response.status_code == 400
@@ -66,7 +69,7 @@ def test_register_internal_error_rolls_back(client, db_session, monkeypatch):
     )
 
     response = client.post(
-        "/api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": "user@example.com", "password": "some_password"},
     )
     assert response.status_code == 500
@@ -79,7 +82,7 @@ def test_register_internal_error_rolls_back(client, db_session, monkeypatch):
 
 def test_register_valid_returns_payload(client):
     response = client.post(
-        "/api/v1/auth/register",
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": "user@example.com", "password": "12345678"},
     )
     assert response.status_code == 201
