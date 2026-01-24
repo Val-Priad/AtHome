@@ -12,6 +12,7 @@ class DomainError(Exception):
 class ErrorSpec:
     status: int
     message: str
+    code: str
 
 
 ERROR_CATALOG: dict[str, ErrorSpec] = {}
@@ -22,7 +23,7 @@ DEFAULT_ERROR_CODE = "internal_server_error"
 def map_code(code: str, status: int, message: str):
     if code in ERROR_CATALOG:
         raise ValueError(f"Error code already registered: {code}")
-    ERROR_CATALOG[code] = ErrorSpec(status=status, message=message)
+    ERROR_CATALOG[code] = ErrorSpec(status=status, message=message, code=code)
 
 
 def map_exception(exception_type: Type[Exception], code: str):

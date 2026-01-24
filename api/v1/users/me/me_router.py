@@ -4,7 +4,6 @@ from pydantic import ValidationError
 
 from api.v1.responses import construct_error, construct_response
 from di import me_service
-from exceptions.error_catalog import get_code_for_exception
 from infrastructure.db import session
 from schemas.me_schemas import PasswordRequest
 
@@ -33,9 +32,24 @@ def update_password():
             message="Password was updated successfully", status=200
         )
     except ValidationError:
-        return construct_error("validation_error")
+        return construct_error(code="validation_error")
     except Exception as e:
         db.rollback()
-        return construct_error(get_code_for_exception(e))
+        return construct_error(e)
+    finally:
+        db.close()
+
+
+bp.patch("/update-personal-data")
+
+
+@jwt_required()
+def update_personal_data():
+    db = session()
+    try:
+        pass
+    except Exception as e:
+        db.rollback()
+        return construct_error(e)
     finally:
         db.close()

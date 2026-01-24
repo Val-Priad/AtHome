@@ -13,9 +13,6 @@ from pydantic import ValidationError
 
 from api.v1.responses import construct_error, construct_response
 from di import auth_service, email_verification_service, password_reset_service
-from exceptions.error_catalog import (
-    get_code_for_exception,
-)
 from infrastructure.db import session
 from schemas.auth_schemas import (
     EmailPasswordRequest,
@@ -51,10 +48,10 @@ def register():
             status=201,
         )
     except ValidationError:
-        return construct_error("validation_error")
+        return construct_error(code="validation_error")
     except Exception as e:
         db.rollback()
-        return construct_error(get_code_for_exception(e))
+        return construct_error(e)
     finally:
         db.close()
 
@@ -72,10 +69,10 @@ def verify_token():
             message="Verification is successful", status=200
         )
     except ValidationError:
-        return construct_error("validation_error")
+        return construct_error(code="validation_error")
     except Exception as e:
         db.rollback()
-        return construct_error(get_code_for_exception(e))
+        return construct_error(e)
     finally:
         db.close()
 
@@ -100,10 +97,10 @@ def resend_verification():
             message="Check your email for confirmation link", status=201
         )
     except ValidationError:
-        return construct_error("validation_error")
+        return construct_error(code="validation_error")
     except Exception as e:
         db.rollback()
-        return construct_error(get_code_for_exception(e))
+        return construct_error(e)
     finally:
         db.close()
 
@@ -124,10 +121,10 @@ def login():
         set_access_cookies(response, access_token)
         return response
     except ValidationError:
-        return construct_error("validation_error")
+        return construct_error(code="validation_error")
     except Exception as e:
         db.rollback()
-        return construct_error(get_code_for_exception(e))
+        return construct_error(e)
     finally:
         db.close()
 
@@ -158,10 +155,10 @@ def reset_password():
             message="Check your email for change password link", status=201
         )
     except ValidationError:
-        return construct_error("validation_error")
+        return construct_error(code="validation_error")
     except Exception as e:
         db.rollback()
-        return construct_error(get_code_for_exception(e))
+        return construct_error(e)
     finally:
         db.close()
 
@@ -179,9 +176,9 @@ def verify_new_password():
             message="Password reset successfully", status=200
         )
     except ValidationError:
-        return construct_error("validation_error")
+        return construct_error(code="validation_error")
     except Exception as e:
         db.rollback()
-        return construct_error(get_code_for_exception(e))
+        return construct_error(e)
     finally:
         db.close()

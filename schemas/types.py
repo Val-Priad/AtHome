@@ -1,9 +1,7 @@
 from typing import Annotated
 
 from pydantic import BeforeValidator, EmailStr, Field
-from pydantic_extra_types.phone_numbers import (
-    PhoneNumber as PydanticPhoneNumber,
-)
+from pydantic_extra_types.phone_numbers import PhoneNumber as PydanticPhoneNumber
 
 from .validators.user_validators import reject_string_with_whitespaces
 

@@ -1,6 +1,9 @@
 from flask import Response, jsonify, make_response
 
-from exceptions.error_catalog import get_description
+from exceptions.error_catalog import (
+    get_description,
+    get_description_for_exception,
+)
 
 
 def construct_response(data=None, message="OK", status=200) -> Response:
@@ -10,9 +13,24 @@ def construct_response(data=None, message="OK", status=200) -> Response:
     return make_response(jsonify(payload), status)
 
 
-def construct_error(code: str) -> Response:
-    description = get_description(code)
+def construct_error(
+    e: Exception | None = None, code: str | None = None
+) -> Response:
+    if code is not None:
+        description = get_description(code)
+    elif e is not None:
+        description = get_description_for_exception(e)
+    else:
+        raise ValueError("Exception or code must be provided")
+
     return make_response(
-        jsonify({"error": {"code": code, "message": description.message}}),
+        jsonify(
+            {
+                "error": {
+                    "code": description.code,
+                    "message": description.message,
+                }
+            }
+        ),
         description.status,
     )
