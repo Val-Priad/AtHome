@@ -25,7 +25,11 @@ class PasswordVerificationError(DomainError):
     pass
 
 
-class NewPasswordMatchesOld(DomainError):
+class NewPasswordMatchesOldError(DomainError):
+    pass
+
+
+class MissingUpdateDataError(DomainError):
     pass
 
 
@@ -64,10 +68,17 @@ def _register_user_errors():
     )
 
     register_custom_error(
-        NewPasswordMatchesOld,
+        NewPasswordMatchesOldError,
         "new_password_matches_old",
         409,
         "New password must be different from the old password",
+    )
+
+    register_custom_error(
+        MissingUpdateDataError,
+        "missing_data_for_update",
+        400,
+        "Missing data for updating personal information",
     )
 
 
