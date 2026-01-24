@@ -20,7 +20,9 @@ class MeService:
         )
 
     @staticmethod
-    def passwords_are_different(old_password: str, new_password: str) -> None:
+    def ensure_new_password_differs(
+        old_password: str, new_password: str
+    ) -> None:
         if old_password == new_password:
             raise NewPasswordMatchesOld
 

@@ -21,7 +21,7 @@ def update_password():
 
         me_service.verify_password(db, user_id, data.old_password)
 
-        me_service.passwords_are_different(
+        me_service.ensure_new_password_differs(
             data.old_password, data.new_password
         )
 
