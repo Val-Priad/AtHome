@@ -43,7 +43,7 @@ class User(Base):
     name: Mapped[str | None] = mapped_column(String(255))
     phone_number: Mapped[str | None] = mapped_column(String(255))
     avatar_key: Mapped[str | None] = mapped_column(Text)
-    description: Mapped[str | None] = mapped_column(String(255))
+    description: Mapped[str | None] = mapped_column(String(510))
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), default=func.now(), nullable=False
     )
@@ -68,7 +68,7 @@ class User(Base):
             "role": self.role.value,
             "name": self.name,
             "phone_number": self.phone_number,
-            "avatar": self.avatar_key,
+            "avatar_key": self.avatar_key,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at,

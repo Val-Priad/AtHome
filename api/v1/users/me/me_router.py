@@ -1,4 +1,6 @@
-from flask import Blueprint, request
+from uuid import UUID
+
+from flask import Blueprint, current_app, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from pydantic import ValidationError
 
@@ -6,7 +8,6 @@ from api.v1.responses import construct_error, construct_response
 from di import me_service
 from infrastructure.db import session
 from schemas.me_schemas import PasswordRequest, UpdateUserPersonalDataRequest
-from uuid import UUID
 
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 
@@ -56,6 +57,7 @@ def update_personal_data():
             message="User personal data was updated successfully",
         )
     except ValidationError:
+        current_app.logger.exception("Validation error")
         return construct_error(code="validation_error")
     except Exception as e:
         db.rollback()

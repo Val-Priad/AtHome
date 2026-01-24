@@ -3,9 +3,9 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from domain.user.user_repository import UserRepository
-from exceptions import NewPasswordMatchesOldError, MissingUpdateDataError
-from security import PasswordCrypto
+from exceptions import MissingUpdateDataError, NewPasswordMatchesOldError
 from schemas.me_schemas import UpdateUserPersonalDataRequest
+from security import PasswordCrypto
 
 
 class MeService:

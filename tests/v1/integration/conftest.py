@@ -8,6 +8,8 @@ from app import app as flask_app
 from domain.user.user_model import User
 from infrastructure.db import engine
 
+API_PREFIX = "/api/v1"
+
 
 @pytest.fixture
 def app() -> Flask:
@@ -63,7 +65,12 @@ def logged_in_user(client: FlaskClient, db_session: Session):
 
     user = db_session.scalar(select(User).where(User.email == email))
     assert user is not None
+
     user.is_email_verified = True
+    user.phone_number = "+420701234567"
+    user.name = "Val Priad"
+    user.avatar_key = "avatars/default/user_1.png"
+    user.description = "Test user account for integration tests"
     db_session.flush()
 
     login_response = client.post("/api/v1/auth/login", json=payload)

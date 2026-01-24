@@ -3,9 +3,9 @@ from typing import Optional
 from pydantic import BaseModel
 
 from .types import (
+    E164NumberType,
     ImageKey,
     Password,
-    PhoneNumberType,
     UserDescription,
     UserName,
 )
@@ -17,7 +17,7 @@ class PasswordRequest(BaseModel):
 
 
 class UpdateUserPersonalDataRequest(BaseModel):
-    name: Optional[UserName]
-    phone_number: Optional[PhoneNumberType]
-    avatar_key: Optional[ImageKey]
-    description: Optional[UserDescription]
+    name: Optional[UserName] = None
+    phone_number: Optional[E164NumberType] = None
+    avatar_key: Optional[ImageKey] = None
+    description: Optional[UserDescription] = None
