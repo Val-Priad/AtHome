@@ -18,9 +18,7 @@ class AuthService:
         self.user_repository = user_repository
         self.password_hasher = password_hasher
 
-    def add_user_and_token(
-        self, db: Session, email: str, password: str
-    ) -> User:
+    def create_user(self, db: Session, email: str, password: str) -> User:
         if self.user_repository.exists_by_email(db, email):
             raise UserAlreadyExistsError()
 

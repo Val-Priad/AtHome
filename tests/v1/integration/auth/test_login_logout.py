@@ -13,7 +13,7 @@ def verified_user(db_session, client):
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": email, "password": password},
     )
-    assert response.status_code == 201
+    assert response.status_code == 202
 
     user = db_session.scalar(select(User).where(User.email == email))
     user.is_email_verified = True

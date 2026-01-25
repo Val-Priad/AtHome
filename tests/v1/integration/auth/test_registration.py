@@ -6,14 +6,14 @@ def test_register_valid(client):
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
         json={"email": "user@example.com", "password": "some_password"},
     )
-    assert response.status_code == 201
+    assert response.status_code == 202
 
 
 def test_register_user_already_exists(client):
     payload = {"email": "user@example.com", "password": "some_password"}
     client.post(f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register", json=payload)
     response = client.post("/api/v1/auth/register", json=payload)
-    assert response.status_code == 409
+    assert response.status_code == 202
 
 
 def test_register_user_validation_error(client):
@@ -65,7 +65,7 @@ def test_register_internal_error_rolls_back(client, db_session, monkeypatch):
         raise Exception("boom")
 
     monkeypatch.setattr(
-        "api.v1.auth.auth_router.auth_service.add_user_and_token", boom
+        "api.v1.auth.auth_router.auth_service.create_user", boom
     )
 
     response = client.post(
@@ -80,12 +80,12 @@ def test_register_internal_error_rolls_back(client, db_session, monkeypatch):
     assert saved_user is None
 
 
-def test_register_valid_returns_payload(client):
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
-        json={"email": "user@example.com", "password": "12345678"},
-    )
-    assert response.status_code == 201
+def test_register_rate_limit(client):
+    payload = {"email": "spam@example.com", "password": "12345678"}
 
-    body = response.get_json()
-    assert body["message"] == "User was created successfully"
+    for _ in range(5):
+        response = client.post("/api/v1/auth/register", json=payload)
+        assert response.status_code == 202
+
+    response = client.post("/api/v1/auth/register", json=payload)
+    assert response.status_code == 429

@@ -4,7 +4,7 @@ from flask.testing import FlaskClient
 from sqlalchemy import event, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from app import app as flask_app
+from app import create_app
 from domain.user.user_model import User
 from infrastructure.db import engine
 
@@ -15,8 +15,9 @@ ME_ENDPOINT_PATH = "/users/me"
 
 @pytest.fixture
 def app() -> Flask:
-    flask_app.config.update(TESTING=True)
-    return flask_app
+    app = create_app()
+    app.config["TESTING"] = True
+    return app
 
 
 @pytest.fixture
@@ -63,7 +64,7 @@ def logged_in_user(client: FlaskClient, db_session: Session):
     password = "12345678"
     payload = {"email": email, "password": password}
     register_response = client.post("/api/v1/auth/register", json=payload)
-    assert register_response.status_code == 201
+    assert register_response.status_code == 202
 
     user = db_session.scalar(select(User).where(User.email == email))
     assert user is not None

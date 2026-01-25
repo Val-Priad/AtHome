@@ -13,7 +13,9 @@ from pydantic import ValidationError
 
 from api.v1.responses import construct_error, construct_response
 from di import auth_service, email_verification_service, password_reset_service
+from exceptions import UserAlreadyExistsError
 from infrastructure.db import session
+from infrastructure.rate_limiting.limiter_config import limiter
 from schemas.auth_schemas import (
     EmailPasswordRequest,
     EmailRequest,
@@ -24,28 +26,33 @@ from schemas.auth_schemas import (
 bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 
-@bp.post("/register")
+@bp.post("/register")  # TODO enumeration vulnerability
+@limiter.limit("5/minute")
 def register():
     db = session()
     try:
         data = EmailPasswordRequest.model_validate(request.json)
 
-        user = auth_service.add_user_and_token(db, data.email, data.password)
+        try:
+            user = auth_service.create_user(db, data.email, data.password)
 
-        raw_token = email_verification_service.add_token(
-            db,
-            user.id,
-        )
+            raw_token = email_verification_service.create_token(
+                db,
+                user.id,
+            )
 
-        db.commit()
+            db.commit()
 
-        email_verification_service.send_verification_email(
-            user.email, raw_token
-        )
+            email_verification_service.send_verification_email(
+                user.email, raw_token
+            )
+
+        except UserAlreadyExistsError:
+            db.rollback()
 
         return construct_response(
-            message="User was created successfully",
-            status=201,
+            message="If there was no user, it was created, following instructions were sent to an email",
+            status=202,
         )
     except ValidationError:
         return construct_error(code="validation_error")
@@ -77,7 +84,7 @@ def verify_token():
         db.close()
 
 
-@bp.post("/resend-verification")
+@bp.post("/resend-verification")  # TODO enumeration vulnerability
 def resend_verification():
     db = session()
     try:
@@ -105,7 +112,7 @@ def resend_verification():
         db.close()
 
 
-@bp.post("/login")
+@bp.post("/login")  # TODO enumeration vulnerability
 def login():
     db = session()
     try:
@@ -138,7 +145,7 @@ def logout():
     return response
 
 
-@bp.post("/reset-password")
+@bp.post("/reset-password")  # TODO enumeration vulnerability
 def reset_password():
     db = session()
     try:

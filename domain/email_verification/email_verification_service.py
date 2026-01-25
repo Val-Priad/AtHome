@@ -46,7 +46,7 @@ class EmailVerificationService:
         if user.is_email_verified:
             raise UserAlreadyVerifiedError()
 
-    def add_token(
+    def create_token(
         self,
         db: Session,
         user_id: uuid.UUID,
@@ -66,7 +66,7 @@ class EmailVerificationService:
         return raw_token
 
     def get_resend_token(self, db: Session, user_id: uuid.UUID):
-        return self.add_token(db, user_id, invalidate_previous=True)
+        return self.create_token(db, user_id, invalidate_previous=True)
 
     def verify_token(self, db: Session, raw_token):
         token = self.email_verification_repository.get_valid_token(
