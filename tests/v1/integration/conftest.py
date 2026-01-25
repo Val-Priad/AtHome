@@ -5,6 +5,7 @@ from sqlalchemy import event, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import create_app
+from config import TestingConfig
 from domain.user.user_model import User
 from infrastructure.db import engine
 
@@ -15,9 +16,7 @@ ME_ENDPOINT_PATH = "/users/me"
 
 @pytest.fixture
 def app() -> Flask:
-    app = create_app()
-    app.config["TESTING"] = True
-    return app
+    return create_app(TestingConfig)
 
 
 @pytest.fixture

@@ -1,32 +1,22 @@
-import os
-from datetime import timedelta
-
-from dotenv import load_dotenv
 from flask import Flask
 
 from api.v1.auth.auth_router import bp as auth_bp
 from api.v1.users.me.me_router import bp as me_bp
+from config import DevelopmentConfig, FlaskConfig
 from exceptions import initialize_custom_exceptions  # noqa: F401
 from infrastructure.db import engine  # NOQA establishing connection with db
-from infrastructure.jwt.jwt_config import jwt
+from infrastructure.jwt.jwt_config import create_jwt_manager
 from infrastructure.jwt.jwt_handlers import register_jwt_handlers
-from infrastructure.rate_limiting.limiter_config import limiter
+from infrastructure.rate_limiting.limiter_config import create_limiter
 
 
-def create_app() -> Flask:
-    load_dotenv()
-
+def create_app(config: type[FlaskConfig]) -> Flask:
     app = Flask(__name__)
 
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
-    app.config["JWT_COOKIE_SECURE"] = (
-        False  # TODO: Change it in production to true
-    )
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config.from_object(config)
 
-    limiter.init_app(app)
-    jwt.init_app(app)
+    create_limiter(app)
+    create_jwt_manager(app)
 
     register_jwt_handlers(app)
 
@@ -36,4 +26,4 @@ def create_app() -> Flask:
     return app
 
 
-app = create_app()
+app = create_app(DevelopmentConfig)
