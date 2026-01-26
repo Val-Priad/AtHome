@@ -33,7 +33,7 @@ class MissingUpdateDataError(DomainError):
     pass
 
 
-def _register_user_errors():
+def register_user_errors():
     register_custom_error(
         UserNotFoundError, "user_not_found", 400, "User not found"
     )
@@ -80,6 +80,3 @@ def _register_user_errors():
         400,
         "Missing data for updating personal information",
     )
-
-
-_register_user_errors()

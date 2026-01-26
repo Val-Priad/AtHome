@@ -14,7 +14,7 @@ from pydantic import ValidationError
 from api.v1.responses import construct_error, construct_response
 from di import auth_service, email_verification_service, password_reset_service
 from exceptions import UserAlreadyExistsError
-from infrastructure.db import session
+from infrastructure.db import get_session
 from infrastructure.rate_limiting.limiter_config import limiter
 from schemas.auth_schemas import (
     EmailPasswordRequest,
@@ -29,7 +29,7 @@ bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 @bp.post("/register")  # TODO enumeration vulnerability
 @limiter.limit("5/minute")
 def register():
-    db = session()
+    db = get_session()
     try:
         data = EmailPasswordRequest.model_validate(request.json)
 
@@ -65,7 +65,7 @@ def register():
 
 @bp.post("/verify-email")
 def verify_token():
-    db = session()
+    db = get_session()
     try:
         data = TokenRequest.model_validate((request.json))
 
@@ -86,7 +86,7 @@ def verify_token():
 
 @bp.post("/resend-verification")  # TODO enumeration vulnerability
 def resend_verification():
-    db = session()
+    db = get_session()
     try:
         data = EmailRequest.model_validate(request.json)
 
@@ -114,7 +114,7 @@ def resend_verification():
 
 @bp.post("/login")  # TODO enumeration vulnerability
 def login():
-    db = session()
+    db = get_session()
     try:
         data = EmailPasswordRequest.model_validate(request.json)
 
@@ -147,7 +147,7 @@ def logout():
 
 @bp.post("/reset-password")  # TODO enumeration vulnerability
 def reset_password():
-    db = session()
+    db = get_session()
     try:
         data = EmailRequest.model_validate(request.json)
 
@@ -172,7 +172,7 @@ def reset_password():
 
 @bp.post("/verify-new-password")
 def verify_new_password():
-    db = session()
+    db = get_session()
     try:
         data = TokenPasswordRequest.model_validate(request.json)
 

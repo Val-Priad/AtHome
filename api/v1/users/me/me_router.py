@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from api.v1.responses import construct_error, construct_response
 from di import me_service
-from infrastructure.db import session
+from infrastructure.db import get_session
 from schemas.me_schemas import PasswordRequest, UpdateUserPersonalDataRequest
 
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
@@ -15,7 +15,7 @@ bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 @bp.patch("/update_password")
 @jwt_required()
 def update_password():
-    db = session()
+    db = get_session()
     try:
         data = PasswordRequest.model_validate(request.json)
         user_id = UUID(get_jwt_identity())
@@ -45,7 +45,7 @@ def update_password():
 @bp.patch("/update-personal-data")
 @jwt_required()
 def update_personal_data():
-    db = session()
+    db = get_session()
     try:
         data = UpdateUserPersonalDataRequest.model_validate(request.json)
         user_id = UUID(get_jwt_identity())

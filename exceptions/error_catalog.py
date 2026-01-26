@@ -15,6 +15,7 @@ class ErrorSpec:
     code: str
 
 
+_INITIALIZED = False
 ERROR_CATALOG: dict[str, ErrorSpec] = {}
 EXCEPTION_TO_CODE: dict[Type[Exception], str] = {}
 DEFAULT_ERROR_CODE = "internal_server_error"
@@ -63,4 +64,18 @@ def _register_default_errors():
     map_code(DEFAULT_ERROR_CODE, 500, "Internal server error")
 
 
-_register_default_errors()
+def _register_custom_errors():
+    from .user_exceptions import register_user_errors
+
+    register_user_errors()
+
+
+def register_errors():
+    global _INITIALIZED
+    if _INITIALIZED:
+        return
+
+    _register_default_errors()
+    _register_custom_errors()
+
+    _INITIALIZED = True

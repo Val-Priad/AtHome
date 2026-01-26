@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app import create_app
 from config import TestingConfig
 from domain.user.user_model import User
-from infrastructure.db import engine
+from infrastructure import db as db_module
 
 API_PREFIX = "/api/v1"
 AUTH_ENDPOINT_PATH = "/auth"
@@ -35,24 +35,26 @@ def noop_send_verification_email(monkeypatch):
 @pytest.fixture(autouse=True)
 def db_session(app: Flask, monkeypatch):
     with app.app_context():
+        engine = db_module.get_engine()
         connection = engine.connect()
         transaction = connection.begin()
 
-        session = sessionmaker(bind=connection)
-        db = session()
-        db.begin_nested()
+        TestingSessionFactory = sessionmaker(bind=connection)
+        session = TestingSessionFactory()
+        session.begin_nested()
 
-        monkeypatch.setattr("api.v1.auth.auth_router.session", lambda: db)
-        monkeypatch.setattr("api.v1.users.me.me_router.session", lambda: db)
+        monkeypatch.setattr(
+            db_module, "_SessionFactory", TestingSessionFactory
+        )
 
-        @event.listens_for(db, "after_transaction_end")
+        @event.listens_for(session, "after_transaction_end")
         def restart_savepoint(session, transaction_):
             if transaction_.nested:
                 session.begin_nested()
 
-        yield db
+        yield session
 
-        db.close()
+        session.close()
         transaction.rollback()
         connection.close()
 
