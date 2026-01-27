@@ -21,6 +21,19 @@ def verified_user(db_session, client):
     return {"email": email, "password": password}
 
 
+@pytest.fixture
+def unverified_user(client, db_session):
+    email = "user@example.com"
+    password = "12345678"
+    response = client.post(
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
+        json={"email": email, "password": password},
+    )
+    assert response.status_code == 202
+
+    return {"email": email, "password": password}
+
+
 def test_login_and_log_out(client, verified_user):
     login_response = client.post(
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/login",
@@ -38,3 +51,36 @@ def test_login_and_log_out(client, verified_user):
         headers={"X-CSRF-TOKEN": csrf},
     )
     assert logout_response.status_code == 204
+
+
+def test_login_unverified_user(client, unverified_user):
+    login_response = client.post(
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/login",
+        json={
+            "email": unverified_user["email"],
+            "password": unverified_user["password"],
+        },
+    )
+    assert login_response.status_code == 401
+
+
+def test_login_not_registered_user(client):
+    login_response = client.post(
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/login",
+        json={
+            "email": "not_registered@example.com",
+            "password": "not_registered",
+        },
+    )
+    assert login_response.status_code == 401
+
+
+def test_login_invalid_password(client, verified_user):
+    login_response = client.post(
+        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/login",
+        json={
+            "email": verified_user["email"],
+            "password": "wrong_password",
+        },
+    )
+    assert login_response.status_code == 401

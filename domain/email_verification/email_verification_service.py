@@ -8,8 +8,8 @@ from domain.email_verification.email_verification_repository import (
 )
 from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
-from exceptions import (
-    EmailSendError,
+from exceptions.mailer_exceptions import EmailSendError
+from exceptions.user_exceptions import (
     TokenVerificationError,
     UserAlreadyVerifiedError,
 )

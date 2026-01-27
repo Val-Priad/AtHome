@@ -1,6 +1,6 @@
 import bcrypt
 
-from exceptions import PasswordVerificationError
+from exceptions.user_exceptions import PasswordVerificationError
 
 
 class PasswordCrypto:

@@ -3,7 +3,7 @@ from conftest import API_PREFIX, ME_ENDPOINT_PATH
 from sqlalchemy import select
 
 from domain.user.user_model import User
-from exceptions import PasswordVerificationError
+from exceptions.user_exceptions import PasswordVerificationError
 from security.password_crypto import PasswordCrypto
 
 

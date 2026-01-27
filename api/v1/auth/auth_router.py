@@ -17,8 +17,8 @@ from api.v1.responses import (
     construct_response,
 )
 from di import auth_service, email_verification_service, password_reset_service
-from exceptions import (
-    EmailSendError,
+from exceptions.mailer_exceptions import EmailSendError
+from exceptions.user_exceptions import (
     PasswordVerificationError,
     UserAlreadyExistsError,
     UserAlreadyVerifiedError,
@@ -127,18 +127,21 @@ def resend_verification():
 def login():
     try:
         data = EmailPasswordRequest.model_validate(request.json)
+    except ValidationError:
+        return construct_error(code="validation_error")
+    try:
         with db_session() as session:
             user = auth_service.verify_password(
                 session, data.email, data.password
             )
             user_id = user.id
+
     except (
-        ValidationError,
         UserNotFoundError,
         UserIsNotVerifiedError,
         PasswordVerificationError,
     ):
-        return construct_error(code="validation_error")
+        return construct_error(code="invalid_credentials")
     except Exception as e:
         current_app.logger.exception("Login error")
         return construct_error(e)

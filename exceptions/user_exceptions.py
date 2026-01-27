@@ -1,6 +1,10 @@
 from .error_catalog import DomainError, register_custom_error
 
 
+class InvalidCredentialsError(DomainError):
+    pass
+
+
 class UserAlreadyExistsError(DomainError):
     pass
 
@@ -79,4 +83,11 @@ def register_user_errors():
         "missing_data_for_update",
         400,
         "Missing data for updating personal information",
+    )
+
+    register_custom_error(
+        InvalidCredentialsError,
+        "invalid_credentials",
+        401,
+        "Invalid credentials",
     )
