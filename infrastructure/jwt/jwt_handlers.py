@@ -4,9 +4,10 @@ from flask import Flask, request
 from flask_jwt_extended import (
     create_access_token,
     get_jwt,
-    get_jwt_identity,
     set_access_cookies,
 )
+
+from .jwt_utils import get_jwt_user_uuid
 
 
 def register_jwt_handlers(app: Flask):
@@ -20,7 +21,9 @@ def register_jwt_handlers(app: Flask):
             now = datetime.now(timezone.utc)
             target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
             if target_timestamp > exp_timestamp:
-                access_token = create_access_token(identity=get_jwt_identity())
+                access_token = create_access_token(
+                    identity=get_jwt_user_uuid()
+                )
                 set_access_cookies(response, access_token)
             return response
         except (RuntimeError, KeyError):

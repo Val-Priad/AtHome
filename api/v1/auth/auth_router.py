@@ -120,7 +120,7 @@ def login():
 
         user = auth_service.verify_password(db, data.email, data.password)
 
-        access_token = create_access_token(identity=user.id, fresh=True)
+        access_token = create_access_token(identity=str(user.id), fresh=True)
         response = construct_response(
             message="Logged in successfully",
             status=200,
