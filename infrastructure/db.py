@@ -20,7 +20,6 @@ def create_db_engine(database_url: str):
 def create_session_factory(engine: Engine):
     return sessionmaker(
         bind=engine,
-        # expire_on_commit=False,
     )
 
 

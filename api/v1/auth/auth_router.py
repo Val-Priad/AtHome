@@ -23,8 +23,10 @@ from exceptions import (
     UserAlreadyExistsError,
     UserNotFoundError,
     UserAlreadyVerifiedError,
+    UserIsNotVerifiedError,
+    PasswordVerificationError,
 )
-from infrastructure.db import db_session, get_session
+from infrastructure.db import db_session
 from infrastructure.rate_limiting.limiter_config import limiter
 from schemas.auth_schemas import (
     EmailPasswordRequest,
@@ -81,6 +83,7 @@ def verify_token():
         with db_session() as session:
             email_verification_service.verify_token(session, data.token)
     except Exception as e:
+        current_app.logger.exception("Verify email token error")
         return construct_error(e)
 
     return construct_no_content()
@@ -107,9 +110,7 @@ def resend_verification():
             email_verification_service.send_verification_email(
                 user.email, raw_token
             )
-    except UserNotFoundError:
-        pass
-    except UserAlreadyVerifiedError:
+    except (UserNotFoundError, UserAlreadyVerifiedError):
         pass
     except EmailSendError:
         current_app.logger.exception("Resend verification email failed")
@@ -125,26 +126,41 @@ def resend_verification():
 
 @bp.post("/login")  # TODO enumeration vulnerability
 def login():
-    db = get_session()
     try:
         data = EmailPasswordRequest.model_validate(request.json)
-
-        user = auth_service.verify_password(db, data.email, data.password)
-
-        access_token = create_access_token(identity=str(user.id), fresh=True)
-        response = construct_response(
-            message="Logged in successfully",
-            status=200,
-        )
-        set_access_cookies(response, access_token)
-        return response
     except ValidationError:
         return construct_error(code="validation_error")
+
+    user_id = None
+    try:
+        with db_session() as session:
+            user = auth_service.verify_password(
+                session, data.email, data.password
+            )
+            user_id = user.id
+    except (
+        UserNotFoundError,
+        UserIsNotVerifiedError,
+        PasswordVerificationError,
+    ):
+        pass
     except Exception as e:
-        db.rollback()
+        current_app.logger.exception("Login error")
         return construct_error(e)
-    finally:
-        db.close()
+
+    if user_id is None:
+        return construct_response(
+            message="Invalid email or password",
+            status=401,
+        )
+
+    access_token = create_access_token(identity=str(user_id), fresh=True)
+    response = construct_response(
+        message="Logged in successfully",
+        status=200,
+    )
+    set_access_cookies(response, access_token)
+    return response
 
 
 @bp.post("/logout")
@@ -158,45 +174,44 @@ def logout():
 
 @bp.post("/reset-password")  # TODO enumeration vulnerability
 def reset_password():
-    db = get_session()
     try:
         data = EmailRequest.model_validate(request.json)
-
-        user = password_reset_service.get_user_by_email(db, data.email)
-        raw_token = password_reset_service.get_token(db, user.id)
-
-        db.commit()
-
-        password_reset_service.send_reset_password_email(data.email, raw_token)
-
-        return construct_response(
-            message="Check your email for change password link", status=201
-        )
     except ValidationError:
         return construct_error(code="validation_error")
+    try:
+        with db_session() as session:
+            user = password_reset_service.get_user_by_email(
+                session, data.email
+            )
+            raw_token = password_reset_service.get_token(session, user.id)
+
+            password_reset_service.send_reset_password_email(
+                data.email, raw_token
+            )
     except Exception as e:
-        db.rollback()
+        current_app.logger.exception("Reset password error")
         return construct_error(e)
-    finally:
-        db.close()
+
+    return construct_response(
+        message="Check your email for change password link", status=201
+    )
 
 
 @bp.post("/verify-new-password")
 def verify_new_password():
-    db = get_session()
     try:
         data = TokenPasswordRequest.model_validate(request.json)
-
-        password_reset_service.reset_password(db, data.token, data.password)
-
-        db.commit()
-        return construct_response(
-            message="Password reset successfully", status=200
-        )
     except ValidationError:
         return construct_error(code="validation_error")
+    try:
+        with db_session() as session:
+            password_reset_service.reset_password(
+                session, data.token, data.password
+            )
     except Exception as e:
-        db.rollback()
+        current_app.logger.exception("Verify new password error")
         return construct_error(e)
-    finally:
-        db.close()
+
+    return construct_response(
+        message="Password reset successfully", status=200
+    )

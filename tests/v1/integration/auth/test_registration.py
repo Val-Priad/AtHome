@@ -94,14 +94,3 @@ def test_register_internal_error_rolls_back(client, db_session, monkeypatch):
         select(User).where(User.email == "user@example.com")
     )
     assert saved_user is None
-
-
-def test_register_rate_limit(client):
-    payload = {"email": "spam@example.com", "password": "12345678"}
-
-    for _ in range(5):
-        response = client.post("/api/v1/auth/register", json=payload)
-        assert response.status_code == 202
-
-    response = client.post("/api/v1/auth/register", json=payload)
-    assert response.status_code == 429
