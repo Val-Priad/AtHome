@@ -39,7 +39,7 @@ bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 
 @bp.post("/register")
-@limiter.limit("5/minute")
+@limiter.limit("2/minute")
 def register():
     try:
         data = EmailPasswordRequest.model_validate(request.json)
@@ -124,7 +124,7 @@ def resend_verification():
     )
 
 
-@bp.post("/login")  # TODO enumeration vulnerability
+@bp.post("/login")
 def login():
     try:
         data = EmailPasswordRequest.model_validate(request.json)
@@ -172,7 +172,8 @@ def logout():
     return response
 
 
-@bp.post("/reset-password")  # TODO enumeration vulnerability
+@bp.post("/reset-password")
+@limiter.limit("2/minute")
 def reset_password():
     try:
         data = EmailRequest.model_validate(request.json)
@@ -188,12 +189,14 @@ def reset_password():
             password_reset_service.send_reset_password_email(
                 data.email, raw_token
             )
+    except (UserNotFoundError, EmailSendError):
+        pass
     except Exception as e:
         current_app.logger.exception("Reset password error")
         return construct_error(e)
 
     return construct_response(
-        message="Check your email for change password link", status=201
+        message="If user exists, password reset has been sent", status=202
     )
 
 
