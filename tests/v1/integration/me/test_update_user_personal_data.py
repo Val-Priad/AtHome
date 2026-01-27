@@ -1,7 +1,10 @@
 from conftest import API_PREFIX, ME_ENDPOINT_PATH
+from sqlalchemy import select
+
+from domain.user.user_model import User
 
 
-def test_update_user_personal_data_valid(client, logged_in_user):
+def test_update_user_personal_data_valid(client, db_session, logged_in_user):
     response = client.patch(
         f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={
@@ -19,6 +22,15 @@ def test_update_user_personal_data_valid(client, logged_in_user):
     assert data["avatar_key"] is None
     assert data["phone_number"] is None
     assert data["description"] is None
+
+    db_session.expire_all()
+    user = db_session.scalar(
+        select(User).where(User.email == logged_in_user["email"])
+    )
+    assert user.name is None
+    assert user.avatar_key is None
+    assert user.phone_number is None
+    assert user.description is None
 
 
 def test_update_user_personal_data_partially_valid(client, logged_in_user):

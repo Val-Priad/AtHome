@@ -20,6 +20,7 @@ def test_update_user_password_valid(client, db_session, logged_in_user):
 
     assert response.status_code == 200
 
+    db_session.expire_all()
     user = db_session.scalar(
         select(User).where(User.email == logged_in_user["email"])
     )
