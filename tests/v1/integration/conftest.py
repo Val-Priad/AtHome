@@ -78,7 +78,7 @@ def logged_in_user(client: FlaskClient, db_session: Session):
     db_session.flush()
 
     login_response = client.post("/api/v1/auth/login", json=payload)
-    assert login_response.status_code == 204
+    assert login_response.status_code == 200
 
     cookie = client.get_cookie("csrf_access_token")
     assert cookie is not None

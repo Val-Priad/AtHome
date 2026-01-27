@@ -18,7 +18,7 @@ def test_update_user_password_valid(client, db_session, logged_in_user):
         headers=logged_in_user["headers"],
     )
 
-    assert response.status_code == 204
+    assert response.status_code == 200
 
     user = db_session.scalar(
         select(User).where(User.email == logged_in_user["email"])

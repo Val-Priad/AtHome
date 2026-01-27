@@ -42,7 +42,7 @@ def test_login_and_log_out(client, verified_user):
             "password": verified_user["password"],
         },
     )
-    assert login_response.status_code == 204
+    assert login_response.status_code == 200
 
     csrf = client.get_cookie("csrf_access_token").value
 
@@ -50,7 +50,7 @@ def test_login_and_log_out(client, verified_user):
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/logout",
         headers={"X-CSRF-TOKEN": csrf},
     )
-    assert logout_response.status_code == 204
+    assert logout_response.status_code == 200
 
 
 def test_login_unverified_user(client, unverified_user):

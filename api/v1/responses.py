@@ -13,10 +13,6 @@ def construct_response(data=None, message="OK", status=200) -> Response:
     return make_response(jsonify(payload), status)
 
 
-def construct_no_content() -> Response:
-    return Response(status=204)
-
-
 def construct_error(
     e: Exception | None = None, code: str | None = None
 ) -> Response:

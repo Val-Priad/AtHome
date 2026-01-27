@@ -43,7 +43,7 @@ def test_verify_new_password_valid(client, set_token, db_session):
         },
     )
 
-    assert response.status_code == 204
+    assert response.status_code == 200
 
     user = db_session.scalar(
         select(User).where(User.id == set_token["user_id"])

@@ -4,7 +4,6 @@ from pydantic import ValidationError
 
 from api.v1.responses import (
     construct_error,
-    construct_no_content,
     construct_response,
 )
 from di import me_service
@@ -38,7 +37,7 @@ def update_password():
         current_app.logger.exception("Update password error")
         return construct_error(e)
 
-    return construct_no_content()
+    return construct_response()
 
 
 @bp.patch("/update-personal-data")

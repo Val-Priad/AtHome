@@ -61,7 +61,7 @@ def test_token_verification_valid(
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email",
         json={"token": raw_token},
     )
-    assert response.status_code == 204
+    assert response.status_code == 200
 
     email_verification = db_session.scalar(
         select(EmailVerification).where(

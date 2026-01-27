@@ -13,7 +13,6 @@ from pydantic import ValidationError
 
 from api.v1.responses import (
     construct_error,
-    construct_no_content,
     construct_response,
 )
 from di import auth_service, email_verification_service, password_reset_service
@@ -85,7 +84,7 @@ def verify_token():
         current_app.logger.exception("Verify email token error")
         return construct_error(e)
 
-    return construct_no_content()
+    return construct_response()
 
 
 @bp.post("/resend-verification")
@@ -147,7 +146,7 @@ def login():
         return construct_error(e)
 
     access_token = create_access_token(identity=str(user_id), fresh=True)
-    response = construct_no_content()
+    response = construct_response()
     set_access_cookies(response, access_token)
     return response
 
@@ -155,7 +154,7 @@ def login():
 @bp.post("/logout")
 @jwt_required()
 def logout():
-    response = construct_no_content()
+    response = construct_response()
     unset_jwt_cookies(response)
     return response
 
@@ -203,4 +202,4 @@ def verify_new_password():
         current_app.logger.exception("Verify new password error")
         return construct_error(e)
 
-    return construct_no_content()
+    return construct_response()
