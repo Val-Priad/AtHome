@@ -50,6 +50,7 @@ def db_session():
     session = get_session()
     try:
         yield session
+        session.commit()
     except Exception:
         session.rollback()
         raise

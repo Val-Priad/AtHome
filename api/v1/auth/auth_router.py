@@ -1,5 +1,6 @@
 from flask import (
     Blueprint,
+    current_app,
     jsonify,
     request,
 )
@@ -11,7 +12,11 @@ from flask_jwt_extended import (
 )
 from pydantic import ValidationError
 
-from api.v1.responses import construct_error, construct_response
+from api.v1.responses import (
+    construct_error,
+    construct_no_content,
+    construct_response,
+)
 from di import auth_service, email_verification_service, password_reset_service
 from exceptions import UserAlreadyExistsError
 from infrastructure.db import db_session, get_session
@@ -22,7 +27,6 @@ from schemas.auth_schemas import (
     TokenPasswordRequest,
     TokenRequest,
 )
-from flask import current_app
 
 bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
@@ -61,23 +65,18 @@ def register():
 
 @bp.post("/verify-email")
 def verify_token():
-    db = get_session()
     try:
         data = TokenRequest.model_validate((request.json))
-
-        email_verification_service.verify_token(db, data.token)
-
-        db.commit()
-        return construct_response(
-            message="Verification is successful", status=200
-        )
     except ValidationError:
         return construct_error(code="validation_error")
+
+    try:
+        with db_session() as session:
+            email_verification_service.verify_token(session, data.token)
     except Exception as e:
-        db.rollback()
         return construct_error(e)
-    finally:
-        db.close()
+
+    return construct_no_content()
 
 
 @bp.post("/resend-verification")  # TODO enumeration vulnerability
