@@ -18,7 +18,12 @@ from api.v1.responses import (
     construct_response,
 )
 from di import auth_service, email_verification_service, password_reset_service
-from exceptions import UserAlreadyExistsError
+from exceptions import (
+    EmailSendError,
+    UserAlreadyExistsError,
+    UserNotFoundError,
+    UserAlreadyVerifiedError,
+)
 from infrastructure.db import db_session, get_session
 from infrastructure.rate_limiting.limiter_config import limiter
 from schemas.auth_schemas import (
@@ -53,6 +58,8 @@ def register():
             )
     except UserAlreadyExistsError:
         pass
+    except EmailSendError:
+        current_app.logger.exception("Registration email send failed")
     except Exception as e:
         current_app.logger.exception("Registration error")
         return construct_error(e)
@@ -79,32 +86,41 @@ def verify_token():
     return construct_no_content()
 
 
-@bp.post("/resend-verification")  # TODO enumeration vulnerability
+@bp.post("/resend-verification")
+@limiter.limit("2/minute")
 def resend_verification():
-    db = get_session()
     try:
         data = EmailRequest.model_validate(request.json)
-
-        user = email_verification_service.get_user_by_email(db, data.email)
-        email_verification_service.check_user_is_not_verified(user)
-        raw_token = email_verification_service.get_resend_token(db, user.id)
-
-        db.commit()
-
-        email_verification_service.send_verification_email(
-            user.email, raw_token
-        )
-
-        return construct_response(
-            message="Check your email for confirmation link", status=201
-        )
     except ValidationError:
         return construct_error(code="validation_error")
+
+    try:
+        with db_session() as session:
+            user = email_verification_service.get_user_by_email(
+                session, data.email
+            )
+            email_verification_service.ensure_user_is_not_verified(user)
+            raw_token = email_verification_service.get_resend_token(
+                session, user.id
+            )
+
+            email_verification_service.send_verification_email(
+                user.email, raw_token
+            )
+    except UserNotFoundError:
+        pass
+    except UserAlreadyVerifiedError:
+        pass
+    except EmailSendError:
+        current_app.logger.exception("Resend verification email failed")
     except Exception as e:
-        db.rollback()
+        current_app.logger.exception("Resend verification error")
         return construct_error(e)
-    finally:
-        db.close()
+
+    return construct_response(
+        message="If the user exists and is not verified, a verification email has been sent",
+        status=202,
+    )
 
 
 @bp.post("/login")  # TODO enumeration vulnerability

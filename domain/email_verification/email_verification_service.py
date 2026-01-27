@@ -42,7 +42,7 @@ class EmailVerificationService:
             raise EmailSendError()
 
     @staticmethod
-    def check_user_is_not_verified(user: User):
+    def ensure_user_is_not_verified(user: User) -> None:
         if user.is_email_verified:
             raise UserAlreadyVerifiedError()
 

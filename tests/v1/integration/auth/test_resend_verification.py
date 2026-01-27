@@ -51,7 +51,7 @@ def test_resend_verification_valid(
         json={"email": unverified_user.email},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 202
 
     qty_of_active_tokens = len(
         db_session.scalars(
@@ -97,12 +97,7 @@ def test_resend_verification_if_user_not_found(client):
         json={"email": "user_does_not_exist@example.com"},
     )
 
-    assert response.status_code == 400
-    body = response.get_json()
-    assert body["error"] == {
-        "code": "user_not_found",
-        "message": "User not found",
-    }
+    assert response.status_code == 202
 
 
 def test_resend_verification_if_user_already_verified(client, verified_user):
@@ -111,12 +106,7 @@ def test_resend_verification_if_user_already_verified(client, verified_user):
         json={"email": verified_user.email},
     )
 
-    assert response.status_code == 409
-    body = response.get_json()
-    assert body["error"] == {
-        "code": "user_already_verified",
-        "message": "User was already verified",
-    }
+    assert response.status_code == 202
 
 
 def test_resend_verification_on_server_error_returns_500(
