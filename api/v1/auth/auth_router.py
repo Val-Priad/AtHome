@@ -1,7 +1,6 @@
 from flask import (
     Blueprint,
     current_app,
-    jsonify,
     request,
 )
 from flask_jwt_extended import (
@@ -20,11 +19,11 @@ from api.v1.responses import (
 from di import auth_service, email_verification_service, password_reset_service
 from exceptions import (
     EmailSendError,
+    PasswordVerificationError,
     UserAlreadyExistsError,
-    UserNotFoundError,
     UserAlreadyVerifiedError,
     UserIsNotVerifiedError,
-    PasswordVerificationError,
+    UserNotFoundError,
 )
 from infrastructure.db import db_session
 from infrastructure.rate_limiting.limiter_config import limiter
@@ -128,37 +127,24 @@ def resend_verification():
 def login():
     try:
         data = EmailPasswordRequest.model_validate(request.json)
-    except ValidationError:
-        return construct_error(code="validation_error")
-
-    user_id = None
-    try:
         with db_session() as session:
             user = auth_service.verify_password(
                 session, data.email, data.password
             )
             user_id = user.id
     except (
+        ValidationError,
         UserNotFoundError,
         UserIsNotVerifiedError,
         PasswordVerificationError,
     ):
-        pass
+        return construct_error(code="validation_error")
     except Exception as e:
         current_app.logger.exception("Login error")
         return construct_error(e)
 
-    if user_id is None:
-        return construct_response(
-            message="Invalid email or password",
-            status=401,
-        )
-
     access_token = create_access_token(identity=str(user_id), fresh=True)
-    response = construct_response(
-        message="Logged in successfully",
-        status=200,
-    )
+    response = construct_no_content()
     set_access_cookies(response, access_token)
     return response
 
@@ -166,9 +152,8 @@ def login():
 @bp.post("/logout")
 @jwt_required()
 def logout():
-    response = jsonify({"message": "Logout successful"})
+    response = construct_no_content()
     unset_jwt_cookies(response)
-
     return response
 
 
@@ -215,6 +200,4 @@ def verify_new_password():
         current_app.logger.exception("Verify new password error")
         return construct_error(e)
 
-    return construct_response(
-        message="Password reset successfully", status=200
-    )
+    return construct_no_content()

@@ -31,7 +31,7 @@ def test_reset_password_token_valid(client, any_user, db_session):
         json={"email": any_user["user_email"]},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 202
 
     qty_of_active_tokens = len(
         db_session.scalars(
@@ -59,7 +59,7 @@ def test_reset_password_token_no_user(client):
         json={"email": "user@example.com"},
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 202
 
 
 def test_reset_password_token_invalid_email(client):

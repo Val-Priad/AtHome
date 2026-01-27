@@ -2,7 +2,11 @@ from flask import Blueprint, current_app, request
 from flask_jwt_extended import jwt_required
 from pydantic import ValidationError
 
-from api.v1.responses import construct_error, construct_response
+from api.v1.responses import (
+    construct_error,
+    construct_no_content,
+    construct_response,
+)
 from di import me_service
 from infrastructure.db import db_session
 from infrastructure.jwt.jwt_utils import get_jwt_user_uuid
@@ -34,9 +38,7 @@ def update_password():
         current_app.logger.exception("Update password error")
         return construct_error(e)
 
-    return construct_response(
-        message="Password was updated successfully", status=200
-    )
+    return construct_no_content()
 
 
 @bp.patch("/update-personal-data")
