@@ -14,7 +14,7 @@ from pydantic import ValidationError
 from api.v1.responses import construct_error, construct_response
 from di import auth_service, email_verification_service, password_reset_service
 from exceptions import UserAlreadyExistsError
-from infrastructure.db import get_session
+from infrastructure.db import db_session, get_session
 from infrastructure.rate_limiting.limiter_config import limiter
 from schemas.auth_schemas import (
     EmailPasswordRequest,
@@ -22,45 +22,41 @@ from schemas.auth_schemas import (
     TokenPasswordRequest,
     TokenRequest,
 )
+from flask import current_app
 
 bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 
-@bp.post("/register")  # TODO enumeration vulnerability
+@bp.post("/register")
 @limiter.limit("5/minute")
 def register():
-    db = get_session()
     try:
         data = EmailPasswordRequest.model_validate(request.json)
+    except ValidationError:
+        return construct_error(code="validation_error")
 
-        try:
-            user = auth_service.create_user(db, data.email, data.password)
+    try:
+        with db_session() as session:
+            user = auth_service.create_user(session, data.email, data.password)
 
             raw_token = email_verification_service.create_token(
-                db,
+                session,
                 user.id,
             )
-
-            db.commit()
 
             email_verification_service.send_verification_email(
                 user.email, raw_token
             )
-
-        except UserAlreadyExistsError:
-            db.rollback()
-
-        return construct_response(
-            message="If there was no user, it was created, following instructions were sent to an email",
-            status=202,
-        )
-    except ValidationError:
-        return construct_error(code="validation_error")
+    except UserAlreadyExistsError:
+        pass
     except Exception as e:
-        db.rollback()
+        current_app.logger.exception("Registration error")
         return construct_error(e)
-    finally:
-        db.close()
+
+    return construct_response(
+        message="If there was no user, it was created, following instructions were sent to an email",
+        status=202,
+    )
 
 
 @bp.post("/verify-email")
