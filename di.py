@@ -1,3 +1,4 @@
+from domain.admin.services.admin_users_service import AdminUsersService
 from domain.email_verification.email_verification_repository import (
     EmailVerificationRepository,
 )
@@ -40,3 +41,4 @@ password_reset_service = PasswordResetService(
 
 auth_service = AuthService(user_repository, password_hasher)
 me_service = MeService(user_repository, password_hasher)
+admin_users_service = AdminUsersService(user_repository)

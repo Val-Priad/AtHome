@@ -56,4 +56,4 @@ def test_update_user_password_old_password_is_wrong(client, logged_in_user):
         headers=logged_in_user["headers"],
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 401

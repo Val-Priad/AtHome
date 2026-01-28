@@ -105,7 +105,7 @@ def test_token_verification_token_expired(
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email",
         json={"token": raw_token},
     )
-    assert response.status_code == 400
+    assert response.status_code == 401
 
     body = response.get_json()
     assert body["error"] == {

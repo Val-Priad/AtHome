@@ -69,7 +69,7 @@ def test_verify_new_password_valid(client, set_token, db_session):
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 401
 
 
 def test_verify_new_password_validation(client, set_token, db_session):

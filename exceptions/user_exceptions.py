@@ -37,20 +37,24 @@ class MissingUpdateDataError(DomainError):
     pass
 
 
+class ForbiddenError(DomainError):
+    pass
+
+
 def register_user_errors():
     register_custom_error(
-        UserNotFoundError, "user_not_found", 400, "User not found"
+        UserNotFoundError, "user_not_found", 404, "User not found"
     )
 
     register_custom_error(
         UserIsNotVerifiedError,
         "user_not_verified",
-        403,
+        409,
         "Verify your email before logging in",
     )
 
     register_custom_error(
-        PasswordVerificationError, "invalid_password", 400, "Invalid password"
+        PasswordVerificationError, "invalid_password", 401, "Invalid password"
     )
 
     register_custom_error(
@@ -61,7 +65,7 @@ def register_user_errors():
     )
 
     register_custom_error(
-        TokenVerificationError, "token_invalid", 400, "Token invalid"
+        TokenVerificationError, "token_invalid", 401, "Token invalid"
     )
 
     register_custom_error(
@@ -90,4 +94,11 @@ def register_user_errors():
         "invalid_credentials",
         401,
         "Invalid credentials",
+    )
+
+    register_custom_error(
+        ForbiddenError,
+        "forbidden",
+        403,
+        "Forbidden action",
     )

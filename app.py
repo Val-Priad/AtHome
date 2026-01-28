@@ -1,5 +1,6 @@
 from flask import Flask
 
+from api.v1.admin.users.admin_users_router import bp as admin_users_bp
 from api.v1.auth.auth_router import bp as auth_bp
 from api.v1.users.me.me_router import bp as me_bp
 from config import DevelopmentConfig, FlaskConfig
@@ -26,6 +27,7 @@ def create_app(config: type[FlaskConfig]) -> Flask:
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(me_bp)
+    app.register_blueprint(admin_users_bp)
 
     return app
 
