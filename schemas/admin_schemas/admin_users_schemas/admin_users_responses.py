@@ -1,7 +1,6 @@
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import ConfigDict
 
-from domain.user.user_model import User
-from exceptions.validation_exceptions import ResponseValidationError
+from schemas.parent_types import ResponseValidation
 from schemas.types import (
     ID,
     E164PhoneNumberType,
@@ -13,7 +12,7 @@ from schemas.types import (
 )
 
 
-class UserResponse(BaseModel):
+class UserResponse(ResponseValidation):
     id: ID
     email: UserEmail
     role: UserRole
@@ -24,10 +23,3 @@ class UserResponse(BaseModel):
     description: UserDescription | None
 
     model_config = ConfigDict(from_attributes=True)
-
-    @classmethod
-    def from_model(cls, user: User):
-        try:
-            return cls.model_validate(user)
-        except ValidationError as e:
-            raise ResponseValidationError() from e

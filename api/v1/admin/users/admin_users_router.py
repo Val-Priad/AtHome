@@ -26,7 +26,7 @@ def get_user(user_id: UUID):
         )
         user = admin_users_service.get_user_by_id(session, user_id)
 
-        return construct_response(data=UserResponse.model_validate(user))
+        return construct_response(data=UserResponse.from_model(user))
 
 
 @bp.errorhandler(Exception)

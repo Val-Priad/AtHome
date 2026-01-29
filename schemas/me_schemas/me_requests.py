@@ -1,8 +1,7 @@
 from typing import Optional
 
-from pydantic import BaseModel
-
-from ..types import (
+from schemas.parent_types import RequestValidation
+from schemas.types import (
     E164PhoneNumberType,
     ImageKey,
     Password,
@@ -11,12 +10,12 @@ from ..types import (
 )
 
 
-class PasswordRequest(BaseModel):
+class PasswordRequest(RequestValidation):
     old_password: Password
     new_password: Password
 
 
-class UpdateUserPersonalDataRequest(BaseModel):
+class UpdateUserPersonalDataRequest(RequestValidation):
     name: Optional[UserName] = None
     phone_number: Optional[E164PhoneNumberType] = None
     avatar_key: Optional[ImageKey] = None

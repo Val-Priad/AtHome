@@ -2,10 +2,10 @@ from typing import Annotated, Union
 from uuid import UUID
 
 from pydantic import BeforeValidator, EmailStr, Field
+from pydantic_extra_types.phone_numbers import PhoneNumber as PydanticPhoneNumber
 from pydantic_extra_types.phone_numbers import (
-    PhoneNumber as PydanticPhoneNumber,
+    PhoneNumberValidator,
 )
-from pydantic_extra_types.phone_numbers import PhoneNumberValidator
 
 from domain.user.user_model import UserRole as UserRoleEnum
 

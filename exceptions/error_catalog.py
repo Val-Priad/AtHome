@@ -1,7 +1,8 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Type
+
+from flask_jwt_extended.exceptions import JWTExtendedException
+from werkzeug.exceptions import HTTPException
 
 
 class DomainError(Exception):
@@ -42,6 +43,42 @@ def get_description(code: str) -> ErrorSpec:
 def get_description_for_exception(exception: Exception) -> ErrorSpec:
     code = get_code_for_exception(exception)
     return get_description(code)
+
+
+def _is_external_exception(exception: Exception) -> bool:
+    return isinstance(exception, (JWTExtendedException, HTTPException))
+
+
+def _jwt_error_code(exc: JWTExtendedException) -> str:
+    name = exc.__class__.__name__
+    if name.endswith("Error"):
+        name = name[:-5]
+    return name.lower()
+
+
+def _get_http_exception_description(e: HTTPException):
+    return e.description if e.description is not None else e.name
+
+
+def _get_http_exception_name(e: HTTPException):
+    return e.name.lower().replace(" ", "_")
+
+
+def get_description_for_external_exception(e: Exception) -> ErrorSpec:
+    if isinstance(e, JWTExtendedException):
+        return ErrorSpec(
+            status=401,
+            code=_jwt_error_code(e),
+            message="Authentication error",
+        )
+    elif isinstance(e, HTTPException):
+        return ErrorSpec(
+            status=e.code if e.code is not None else 500,
+            message=_get_http_exception_description(e),
+            code=_get_http_exception_name(e),
+        )
+
+    raise RuntimeError("Not registered external exception")
 
 
 def get_code_for_exception(exception: Exception) -> str:

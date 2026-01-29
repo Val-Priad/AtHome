@@ -4,8 +4,10 @@ from flask import Response, jsonify, make_response
 from pydantic import BaseModel
 
 from exceptions.error_catalog import (
+    _is_external_exception,
     get_description,
     get_description_for_exception,
+    get_description_for_external_exception,
 )
 
 
@@ -24,7 +26,9 @@ def construct_error(
 ) -> Response:
     if code is not None:
         description = get_description(code)
-    elif e is not None:
+    elif e and _is_external_exception(e):
+        description = get_description_for_external_exception(e)
+    elif e:
         description = get_description_for_exception(e)
     else:
         raise ValueError("Exception or code must be provided")

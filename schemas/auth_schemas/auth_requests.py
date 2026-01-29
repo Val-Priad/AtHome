@@ -1,21 +1,21 @@
-from pydantic import BaseModel
+from schemas.parent_types import RequestValidation
 
 from ..types import Password, Token, UserEmail
 
 
-class EmailPasswordRequest(BaseModel):
+class EmailPasswordRequest(RequestValidation):
     email: UserEmail
     password: Password
 
 
-class EmailRequest(BaseModel):
+class EmailRequest(RequestValidation):
     email: UserEmail
 
 
-class TokenRequest(BaseModel):
+class TokenRequest(RequestValidation):
     token: Token
 
 
-class TokenPasswordRequest(BaseModel):
+class TokenPasswordRequest(RequestValidation):
     token: Token
     password: Password

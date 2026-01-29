@@ -1,16 +1,16 @@
-from flask import Blueprint, current_app, request
+from flask import Blueprint, request
 from flask_jwt_extended import (
     create_access_token,
     jwt_required,
     set_access_cookies,
     unset_jwt_cookies,
 )
-from pydantic import ValidationError
 
 from api.v1.responses import construct_error, construct_response
 from di import auth_service, email_verification_service, password_reset_service
 from exceptions.mailer_exceptions import EmailSendError
 from exceptions.user_exceptions import (
+    InvalidCredentialsError,
     PasswordVerificationError,
     UserAlreadyExistsError,
     UserAlreadyVerifiedError,
@@ -32,10 +32,7 @@ bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 @bp.post("/register")
 @limiter.limit("2/minute")
 def register():
-    try:
-        data = EmailPasswordRequest.model_validate(request.json)
-    except ValidationError:
-        return construct_error(code="validation_error")
+    data = EmailPasswordRequest.from_request(request.json)
 
     try:
         with db_session() as session:
@@ -49,14 +46,8 @@ def register():
             email_verification_service.send_verification_email(
                 user.email, raw_token
             )
-    except UserAlreadyExistsError:
+    except (UserAlreadyExistsError, EmailSendError):
         pass
-    except EmailSendError:
-        current_app.logger.exception("Registration email send failed")
-    except Exception as e:
-        current_app.logger.exception("Registration error")
-        return construct_error(e)
-
     return construct_response(
         message="If there was no user, it was created, following instructions were sent to an email",
         status=202,
@@ -65,17 +56,10 @@ def register():
 
 @bp.post("/verify-email")
 def verify_token():
-    try:
-        data = TokenRequest.model_validate((request.json))
-    except ValidationError:
-        return construct_error(code="validation_error")
+    data = TokenRequest.from_request((request.json))
 
-    try:
-        with db_session() as session:
-            email_verification_service.verify_token(session, data.token)
-    except Exception as e:
-        current_app.logger.exception("Verify email token error")
-        return construct_error(e)
+    with db_session() as session:
+        email_verification_service.verify_token(session, data.token)
 
     return construct_response()
 
@@ -83,10 +67,7 @@ def verify_token():
 @bp.post("/resend-verification")
 @limiter.limit("2/minute")
 def resend_verification():
-    try:
-        data = EmailRequest.model_validate(request.json)
-    except ValidationError:
-        return construct_error(code="validation_error")
+    data = EmailRequest.from_request(request.json)
 
     try:
         with db_session() as session:
@@ -101,13 +82,8 @@ def resend_verification():
             email_verification_service.send_verification_email(
                 user.email, raw_token
             )
-    except (UserNotFoundError, UserAlreadyVerifiedError):
+    except (UserNotFoundError, UserAlreadyVerifiedError, EmailSendError):
         pass
-    except EmailSendError:
-        current_app.logger.exception("Resend verification email failed")
-    except Exception as e:
-        current_app.logger.exception("Resend verification error")
-        return construct_error(e)
 
     return construct_response(
         message="If the user exists and is not verified, a verification email has been sent",
@@ -117,10 +93,8 @@ def resend_verification():
 
 @bp.post("/login")
 def login():
-    try:
-        data = EmailPasswordRequest.model_validate(request.json)
-    except ValidationError:
-        return construct_error(code="validation_error")
+    data = EmailPasswordRequest.from_request(request.json)
+
     try:
         with db_session() as session:
             user = auth_service.verify_password(
@@ -133,11 +107,7 @@ def login():
         UserIsNotVerifiedError,
         PasswordVerificationError,
     ):
-        return construct_error(code="invalid_credentials")
-    except Exception as e:
-        current_app.logger.exception("Login error")
-        return construct_error(e)
-
+        return construct_error(InvalidCredentialsError())
     access_token = create_access_token(identity=str(user_id), fresh=True)
     response = construct_response()
     set_access_cookies(response, access_token)
@@ -155,10 +125,8 @@ def logout():
 @bp.post("/reset-password")
 @limiter.limit("2/minute")
 def reset_password():
-    try:
-        data = EmailRequest.model_validate(request.json)
-    except ValidationError:
-        return construct_error(code="validation_error")
+    data = EmailRequest.from_request(request.json)
+
     try:
         with db_session() as session:
             user = password_reset_service.get_user_by_email(
@@ -171,9 +139,6 @@ def reset_password():
             )
     except (UserNotFoundError, EmailSendError):
         pass
-    except Exception as e:
-        current_app.logger.exception("Reset password error")
-        return construct_error(e)
 
     return construct_response(
         message="If user exists, password reset has been sent", status=202
@@ -182,17 +147,15 @@ def reset_password():
 
 @bp.post("/verify-new-password")
 def verify_new_password():
-    try:
-        data = TokenPasswordRequest.model_validate(request.json)
-    except ValidationError:
-        return construct_error(code="validation_error")
-    try:
-        with db_session() as session:
-            password_reset_service.reset_password(
-                session, data.token, data.password
-            )
-    except Exception as e:
-        current_app.logger.exception("Verify new password error")
-        return construct_error(e)
+    data = TokenPasswordRequest.from_request(request.json)
 
+    with db_session() as session:
+        password_reset_service.reset_password(
+            session, data.token, data.password
+        )
     return construct_response()
+
+
+@bp.errorhandler(Exception)
+def handle_exception(e: Exception):
+    return construct_error(e)

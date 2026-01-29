@@ -1,6 +1,5 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
-from pydantic import ValidationError
 
 from api.v1.responses import construct_error, construct_response
 from di import me_service
@@ -20,10 +19,7 @@ bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 @bp.patch("/update_password")
 @jwt_required()
 def update_password():
-    try:
-        data = PasswordRequest.model_validate(request.json)
-    except ValidationError:
-        return construct_error(code="validation_error")
+    data = PasswordRequest.from_request(request.json)
 
     with db_session() as session:
         user_id = get_jwt_user_uuid()
@@ -41,16 +37,13 @@ def update_password():
 @bp.patch("/update-personal-data")
 @jwt_required()
 def update_personal_data():
-    try:
-        data = UpdateUserPersonalDataRequest.model_validate(request.json)
-    except ValidationError:
-        return construct_error(code="validation_error")
+    data = UpdateUserPersonalDataRequest.from_request(request.json)
 
     with db_session() as session:
         user_id = get_jwt_user_uuid()
         user = me_service.update_personal_data(session, user_id, data)
         return construct_response(
-            data=UserResponse.model_validate(user),
+            data=UserResponse.from_model(user),
             message="User personal data was updated successfully",
         )
 
