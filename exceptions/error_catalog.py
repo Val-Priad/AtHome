@@ -66,8 +66,10 @@ def _register_default_errors():
 
 def _register_custom_errors():
     from .user_exceptions import register_user_errors
+    from .validation_exceptions import register_validation_errors
 
     register_user_errors()
+    register_validation_errors()
 
 
 def register_errors():

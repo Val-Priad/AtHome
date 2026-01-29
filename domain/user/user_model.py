@@ -60,16 +60,3 @@ class User(Base):
     password_reset_tokens: Mapped[list["PasswordReset"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "email": self.email,
-            "role": self.role.value,
-            "name": self.name,
-            "phone_number": self.phone_number,
-            "avatar_key": self.avatar_key,
-            "description": self.description,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }

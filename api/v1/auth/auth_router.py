@@ -19,7 +19,7 @@ from exceptions.user_exceptions import (
 )
 from infrastructure.db import db_session
 from infrastructure.rate_limiting.limiter_config import limiter
-from schemas.auth_schemas import (
+from schemas.auth_schemas.auth_requests import (
     EmailPasswordRequest,
     EmailRequest,
     TokenPasswordRequest,

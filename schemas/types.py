@@ -1,22 +1,27 @@
 from typing import Annotated, Union
+from uuid import UUID
 
 from pydantic import BeforeValidator, EmailStr, Field
-from pydantic_extra_types.phone_numbers import PhoneNumber as PydanticPhoneNumber
 from pydantic_extra_types.phone_numbers import (
-    PhoneNumberValidator,
+    PhoneNumber as PydanticPhoneNumber,
 )
+from pydantic_extra_types.phone_numbers import PhoneNumberValidator
+
+from domain.user.user_model import UserRole as UserRoleEnum
 
 from .validators.user_validators import (
     reject_string_with_whitespaces,
     strip_string,
 )
 
+ID = Annotated[UUID, Field()]
 UserName = Annotated[
     str,
     Field(min_length=1, max_length=255),
     BeforeValidator(strip_string),
 ]
-E164NumberType = Annotated[
+UserRole = Annotated[UserRoleEnum, Field()]
+E164PhoneNumberType = Annotated[
     Union[PydanticPhoneNumber], PhoneNumberValidator(number_format="E164")
 ]
 ImageKey = Annotated[str, Field(min_length=1, max_length=1024)]

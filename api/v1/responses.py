@@ -1,4 +1,7 @@
+from typing import Any
+
 from flask import Response, jsonify, make_response
+from pydantic import BaseModel
 
 from exceptions.error_catalog import (
     get_description,
@@ -6,10 +9,13 @@ from exceptions.error_catalog import (
 )
 
 
-def construct_response(data=None, message="OK", status=200) -> Response:
-    payload = {"message": message}
-    if data is not None:
-        payload["data"] = data
+def construct_response(
+    data: None | BaseModel = None, message: str = "OK", status: int = 200
+) -> Response:
+    payload: dict[str, Any] = {"message": message}
+    if isinstance(data, BaseModel):
+        payload["data"] = data.model_dump(mode="json")
+
     return make_response(jsonify(payload), status)
 
 

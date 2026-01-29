@@ -7,7 +7,7 @@ from exceptions.user_exceptions import (
     MissingUpdateDataError,
     NewPasswordMatchesOldError,
 )
-from schemas.me_schemas import UpdateUserPersonalDataRequest
+from schemas.me_schemas.me_requests import UpdateUserPersonalDataRequest
 from security import PasswordCrypto
 
 

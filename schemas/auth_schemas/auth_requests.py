@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from .types import Password, Token, UserEmail
+from ..types import Password, Token, UserEmail
 
 
 class EmailPasswordRequest(BaseModel):

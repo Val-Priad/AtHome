@@ -1,30 +1,32 @@
-import pytest
 from flask import Flask
 from flask.testing import FlaskClient
+from pytest import FixtureRequest, fixture
 from sqlalchemy import event, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import create_app
 from config import TestingConfig
-from domain.user.user_model import User
+from domain.user.user_model import User, UserRole
 from infrastructure import db as db_module
+from security.password_crypto import PasswordCrypto
 
 API_PREFIX = "/api/v1"
 AUTH_ENDPOINT_PATH = "/auth"
 ME_ENDPOINT_PATH = "/users/me"
+ADMIN_USERS_PATH = "/admin/users"
 
 
-@pytest.fixture
+@fixture
 def app() -> Flask:
     return create_app(TestingConfig)
 
 
-@pytest.fixture
+@fixture
 def client(app) -> FlaskClient:
     return app.test_client()
 
 
-@pytest.fixture(autouse=True)
+@fixture(autouse=True)
 def noop_send_verification_email(monkeypatch):
     monkeypatch.setattr(
         "infrastructure.email.Mailer.Mailer.send_verification_email",
@@ -32,7 +34,7 @@ def noop_send_verification_email(monkeypatch):
     )
 
 
-@pytest.fixture(autouse=True)
+@fixture(autouse=True)
 def db_session(app: Flask, monkeypatch):
     with app.app_context():
         engine = db_module.get_engine()
@@ -59,11 +61,16 @@ def db_session(app: Flask, monkeypatch):
         connection.close()
 
 
-@pytest.fixture
-def logged_in_user(client: FlaskClient, db_session: Session):
+@fixture
+def logged_in_user(
+    request: FixtureRequest, client: FlaskClient, db_session: Session
+):
+    user_role = getattr(request, "param", UserRole.user)
+
     email = "user@example.com"
     password = "12345678"
     payload = {"email": email, "password": password}
+
     register_response = client.post("/api/v1/auth/register", json=payload)
     assert register_response.status_code == 202
 
@@ -75,6 +82,7 @@ def logged_in_user(client: FlaskClient, db_session: Session):
     user.name = "Val Priad"
     user.avatar_key = "avatars/default/user_1.png"
     user.description = "Test user account for integration tests"
+    user.role = user_role
     db_session.flush()
 
     login_response = client.post("/api/v1/auth/login", json=payload)
@@ -88,3 +96,18 @@ def logged_in_user(client: FlaskClient, db_session: Session):
         "password": password,
         "headers": {"X-CSRF-TOKEN": cookie.value},
     }
+
+
+@fixture
+def any_user(request: FixtureRequest, db_session: Session):
+    user_role = getattr(request, "param", UserRole.user)
+
+    user = User(
+        email="any_user@example.com",
+        password_hash=PasswordCrypto.hash_password("any_password"),
+        is_email_verified=True,
+        role=user_role,
+    )
+    db_session.add(user)
+    db_session.flush()
+    return user
