@@ -15,6 +15,8 @@ from schemas.me_schemas.me_requests import (
 
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 
+# TODO: delete my account
+
 
 @bp.get("/")
 @jwt_required()

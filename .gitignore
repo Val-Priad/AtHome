@@ -22,6 +22,6 @@ wheels/
 migrations
 
 # thoughts files
-THOUGHTS
+_sandbox
 
 .coverage

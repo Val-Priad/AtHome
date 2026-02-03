@@ -47,3 +47,7 @@ class Mailer:
             "text": f"Reset your password by following the link:\n{verification_url}",
         }
         resend.Emails.send(params)  # type: ignore
+
+
+# TODO: implement sending email to agent
+# TODO: create clean HTML email markup

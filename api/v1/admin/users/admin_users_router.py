@@ -32,3 +32,11 @@ def get_user(user_id: UUID):
 @bp.errorhandler(Exception)
 def handle_exception(e: Exception):
     return construct_error(e)
+
+
+# TODO: delete user
+# TODO:
+# read users list (GDPR safe fields only)
+# add filters for users list
+# add sorting for users list
+# TODO: change user role to specified
