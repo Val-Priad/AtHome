@@ -1,10 +1,10 @@
 from pydantic import BaseModel, ValidationError
 
-from exceptions.exceptions_utils import wrap_with_custom_error
-from exceptions.validation_exceptions import (
+from exceptions.custom_exceptions.validation_exceptions import (
     RequestValidationError,
     ResponseValidationError,
 )
+from exceptions.exceptions_utils import wrap_with_custom_error
 from infrastructure.db import Base
 
 

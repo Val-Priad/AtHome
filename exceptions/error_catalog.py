@@ -1,8 +1,12 @@
+import logging
+import re
 from dataclasses import dataclass
 from typing import Type
 
 from flask_jwt_extended.exceptions import JWTExtendedException
 from werkzeug.exceptions import HTTPException
+
+_logger = logging.getLogger(__name__)
 
 
 class DomainError(Exception):
@@ -40,20 +44,23 @@ def get_description(code: str) -> ErrorSpec:
     return ERROR_CATALOG[code]
 
 
-def get_description_for_exception(exception: Exception) -> ErrorSpec:
-    code = get_code_for_exception(exception)
+def get_description_for_exception(e: Exception) -> ErrorSpec:
+    code = get_code_for_exception(e)
     return get_description(code)
 
 
-def _is_external_exception(exception: Exception) -> bool:
-    return isinstance(exception, (JWTExtendedException, HTTPException))
+def _is_external_exception(e: Exception) -> bool:
+    return isinstance(e, (JWTExtendedException, HTTPException))
 
 
-def _jwt_error_code(exc: JWTExtendedException) -> str:
-    name = exc.__class__.__name__
+def _jwt_error_code(e: JWTExtendedException) -> str:
+    name = e.__class__.__name__
     if name.endswith("Error"):
         name = name[:-5]
-    return name.lower()
+
+    first_rule = re.sub("(?<=[a-z])(?=[A-Z])", "_", name)
+    second_rule = re.sub("(?<=[A-Z])(?=[A-Z][a-z])", "_", first_rule)
+    return second_rule.lower()
 
 
 def _get_http_exception_description(e: HTTPException):
@@ -81,11 +88,12 @@ def get_description_for_external_exception(e: Exception) -> ErrorSpec:
     raise RuntimeError("Not registered external exception")
 
 
-def get_code_for_exception(exception: Exception) -> str:
-    exc_type = type(exception)
+def get_code_for_exception(e: Exception) -> str:
+    exc_type = type(e)
     for cls in exc_type.__mro__:
         if cls in EXCEPTION_TO_CODE:
             return EXCEPTION_TO_CODE[cls]
+    _logger.exception(e)
     return DEFAULT_ERROR_CODE
 
 
@@ -102,8 +110,10 @@ def _register_default_errors():
 
 
 def _register_custom_errors():
-    from .user_exceptions import register_user_errors
-    from .validation_exceptions import register_validation_errors
+    from .custom_exceptions.user_exceptions import register_user_errors
+    from .custom_exceptions.validation_exceptions import (
+        register_validation_errors,
+    )
 
     register_user_errors()
     register_validation_errors()

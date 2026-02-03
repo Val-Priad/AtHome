@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from domain.user.user_model import UserRole
 from domain.user.user_repository import UserRepository
-from exceptions.user_exceptions import ForbiddenError
+from exceptions.custom_exceptions.user_exceptions import ForbiddenError
 
 
 class AdminUsersService:

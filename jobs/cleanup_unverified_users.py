@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import cast
 
@@ -6,7 +7,7 @@ from sqlalchemy import CursorResult, delete
 from domain.user.user_model import User
 from infrastructure.db import db_session
 
-from .jobs_logger import jobs_logger
+_logger = logging.getLogger(__name__)
 
 
 def cleanup_unverified_users():
@@ -23,14 +24,8 @@ def cleanup_unverified_users():
                     )
                 ),
             )
-        jobs_logger.info(
-            f"Successfully deleted {result.rowcount} unverified users"
+        _logger.info(
+            "Successfully deleted %s unverified users", result.rowcount
         )
-    except Exception as e:
-        jobs_logger.error(
-            f"Error occurred during deletion of unverified users {e}"
-        )
-
-
-if __name__ == "__main__":
-    cleanup_unverified_users()
+    except Exception:
+        _logger.exception("Error occurred during deletion of unverified users")

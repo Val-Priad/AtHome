@@ -13,7 +13,7 @@ def test_update_user_personal_data_valid(client, db_session, logged_in_user):
             "phone_number": None,
             "description": None,
         },
-        headers=logged_in_user["headers"],
+        headers=logged_in_user.headers,
     )
     assert response.status_code == 200
     body = response.get_json()
@@ -25,7 +25,7 @@ def test_update_user_personal_data_valid(client, db_session, logged_in_user):
 
     db_session.expire_all()
     user = db_session.scalar(
-        select(User).where(User.email == logged_in_user["email"])
+        select(User).where(User.email == logged_in_user.email)
     )
     assert user.name is None
     assert user.avatar_key is None
@@ -41,7 +41,7 @@ def test_update_user_personal_data_partially_valid(client, logged_in_user):
             "phone_number": None,
             "description": None,
         },
-        headers=logged_in_user["headers"],
+        headers=logged_in_user.headers,
     )
     assert response.status_code == 200
     body = response.get_json()
@@ -59,7 +59,7 @@ def test_update_user_personal_data_partially2_valid(client, logged_in_user):
             "phone_number": None,
             "description": None,
         },
-        headers=logged_in_user["headers"],
+        headers=logged_in_user.headers,
     )
     assert response.status_code == 200
     body = response.get_json()
@@ -74,7 +74,7 @@ def test_update_user_personal_data_name_is_trimmed(client, logged_in_user):
     response = client.patch(
         f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={"name": "Val Priad           "},
-        headers=logged_in_user["headers"],
+        headers=logged_in_user.headers,
     )
     assert response.status_code == 200
     body = response.get_json()
@@ -86,7 +86,7 @@ def test_update_user_personal_data_with_no_data(client, logged_in_user):
     response = client.patch(
         f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={},
-        headers=logged_in_user["headers"],
+        headers=logged_in_user.headers,
     )
     assert response.status_code == 400
 
@@ -95,7 +95,7 @@ def test_update_user_personal_data_with_invalid_phone(client, logged_in_user):
     response = client.patch(
         f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={"phone_number": "invalid_phone"},
-        headers=logged_in_user["headers"],
+        headers=logged_in_user.headers,
     )
     assert response.status_code == 400
 
@@ -104,6 +104,6 @@ def test_update_user_personal_data_email(client, logged_in_user):
     response = client.patch(
         f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
         json={"email": "hacker@gmail.com"},
-        headers=logged_in_user["headers"],
+        headers=logged_in_user.headers,
     )
     assert response.status_code == 400

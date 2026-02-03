@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from flask import Flask
 from flask.testing import FlaskClient
 from pytest import FixtureRequest, fixture
@@ -91,11 +93,12 @@ def logged_in_user(
     cookie = client.get_cookie("csrf_access_token")
     assert cookie is not None
 
-    return {
-        "email": email,
-        "password": password,
-        "headers": {"X-CSRF-TOKEN": cookie.value},
-    }
+    return SimpleNamespace(
+        id=user.id,
+        email=email,
+        password=password,
+        headers={"X-CSRF-TOKEN": cookie.value},
+    )
 
 
 @fixture

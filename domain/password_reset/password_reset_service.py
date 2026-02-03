@@ -7,8 +7,8 @@ from domain.password_reset.password_reset_repository import (
     PasswordResetRepository,
 )
 from domain.user.user_repository import UserRepository
-from exceptions.mailer_exceptions import EmailSendError
-from exceptions.user_exceptions import TokenVerificationError
+from exceptions.custom_exceptions.mailer_exceptions import EmailSendError
+from exceptions.custom_exceptions.user_exceptions import TokenVerificationError
 from infrastructure.email.Mailer import Mailer
 from security import PasswordCrypto, TokenCrypto
 

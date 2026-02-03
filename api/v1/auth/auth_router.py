@@ -8,8 +8,8 @@ from flask_jwt_extended import (
 
 from api.v1.responses import construct_error, construct_response
 from di import auth_service, email_verification_service, password_reset_service
-from exceptions.mailer_exceptions import EmailSendError
-from exceptions.user_exceptions import (
+from exceptions.custom_exceptions.mailer_exceptions import EmailSendError
+from exceptions.custom_exceptions.user_exceptions import (
     InvalidCredentialsError,
     PasswordVerificationError,
     UserAlreadyExistsError,

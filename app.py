@@ -8,10 +8,12 @@ from exceptions.error_catalog import register_errors
 from infrastructure.db import get_engine
 from infrastructure.jwt.jwt_config import create_jwt_manager
 from infrastructure.jwt.jwt_handlers import register_jwt_handlers
+from infrastructure.logging.setup_logging import setup_logging
 from infrastructure.rate_limiting.limiter_config import create_limiter
 
 
 def create_app(config: type[FlaskConfig]) -> Flask:
+    setup_logging()
     app = Flask(__name__)
 
     app.config.from_object(config)

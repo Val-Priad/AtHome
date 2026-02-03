@@ -16,6 +16,17 @@ from schemas.me_schemas.me_requests import (
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 
 
+@bp.get("/")
+@jwt_required()
+def get_user():
+    user_id = get_jwt_user_uuid()
+
+    with db_session() as session:
+        user = me_service.get_user_by_id(session, user_id)
+
+        return construct_response(data=UserResponse.from_model(user))
+
+
 @bp.patch("/update_password")
 @jwt_required()
 def update_password():

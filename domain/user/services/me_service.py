@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from domain.user.user_repository import UserRepository
-from exceptions.user_exceptions import (
+from exceptions.custom_exceptions.user_exceptions import (
     MissingUpdateDataError,
     NewPasswordMatchesOldError,
 )
@@ -17,6 +17,9 @@ class MeService:
     ):
         self.user_repository = user_repository
         self.password_hasher = password_hasher
+
+    def get_user_by_id(self, db, user_id):
+        return self.user_repository.get_user_by_id(db, user_id)
 
     def update_password(self, db: Session, user_id: UUID, raw_password: str):
         self.user_repository.update_password(

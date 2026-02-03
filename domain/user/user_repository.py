@@ -4,7 +4,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from domain.user.user_model import User
-from exceptions.user_exceptions import UserNotFoundError
+from exceptions.custom_exceptions.user_exceptions import UserNotFoundError
 
 
 class UserRepository:

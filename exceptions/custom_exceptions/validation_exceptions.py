@@ -1,4 +1,4 @@
-from .error_catalog import DomainError, register_custom_error
+from ..error_catalog import DomainError, register_custom_error
 
 
 class ValidationError(DomainError):
