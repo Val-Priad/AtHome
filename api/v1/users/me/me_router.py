@@ -9,7 +9,7 @@ from schemas.me_schemas.me_requests import (
     PasswordRequest,
     UpdateUserPersonalDataRequest,
 )
-from schemas.me_schemas.me_responses import UserResponse
+from schemas.me_schemas.me_responses import MeResponse
 
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 
@@ -22,7 +22,7 @@ def get_me():
     with db_session() as session:
         user = me_service.get_user_by_id(session, user_id)
 
-        return construct_response(data=UserResponse.from_model(user))
+        return construct_response(data=MeResponse.from_model(user))
 
 
 @bp.delete("/")
@@ -63,7 +63,7 @@ def update_personal_data():
         user_id = get_jwt_user_uuid()
         user = me_service.update_personal_data(session, user_id, data)
         return construct_response(
-            data=UserResponse.from_model(user),
+            data=MeResponse.from_model(user),
             message="User personal data was updated successfully",
         )
 

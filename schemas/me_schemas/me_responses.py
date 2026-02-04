@@ -12,7 +12,7 @@ from schemas.types import (
 )
 
 
-class UserResponse(ResponseValidation):
+class MeResponse(ResponseValidation):
     id: ID
     email: UserEmail
     role: UserRole
