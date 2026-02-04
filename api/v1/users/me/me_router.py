@@ -5,13 +5,11 @@ from api.v1.responses import construct_error, construct_response
 from di import me_service
 from infrastructure.db import db_session
 from infrastructure.jwt.jwt_utils import get_jwt_user_uuid
-from schemas.admin_schemas.admin_users_schemas.admin_users_responses import (
-    UserResponse,
-)
 from schemas.me_schemas.me_requests import (
     PasswordRequest,
     UpdateUserPersonalDataRequest,
 )
+from schemas.me_schemas.me_responses import UserResponse
 
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 
