@@ -1,3 +1,4 @@
+import pytest
 from conftest import API_PREFIX, ME_ENDPOINT_PATH
 from sqlalchemy import select
 
@@ -82,28 +83,28 @@ def test_update_user_personal_data_name_is_trimmed(client, logged_in_user):
     assert data["name"] == "Val Priad"
 
 
-def test_update_user_personal_data_with_no_data(client, logged_in_user):
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param(
+            {},
+            id="no_data_provided",
+        ),
+        pytest.param(
+            {"phone_number": "invalid_phone"},
+            id="invalid_phone_number",
+        ),
+        pytest.param(
+            {"email": "hacker@gmail.com"},
+            id="email_update_not_allowed",
+        ),
+    ],
+)
+def test_update_user_personal_data_validation(client, logged_in_user, payload):
     response = client.patch(
         f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
-        json={},
+        json=payload,
         headers=logged_in_user.headers,
     )
-    assert response.status_code == 400
 
-
-def test_update_user_personal_data_with_invalid_phone(client, logged_in_user):
-    response = client.patch(
-        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
-        json={"phone_number": "invalid_phone"},
-        headers=logged_in_user.headers,
-    )
-    assert response.status_code == 400
-
-
-def test_update_user_personal_data_email(client, logged_in_user):
-    response = client.patch(
-        f"{API_PREFIX}{ME_ENDPOINT_PATH}/update-personal-data",
-        json={"email": "hacker@gmail.com"},
-        headers=logged_in_user.headers,
-    )
     assert response.status_code == 400

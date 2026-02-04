@@ -74,25 +74,33 @@ def test_token_verification_valid(
     assert user.is_email_verified
 
 
-def test_token_verification_token_validation(client):
-    response = client.post("api/v1/auth/verify-email", json={"token": ""})
-    assert response.status_code == 400
-
-    too_long = "" * 55
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param(
+            {"token": ""},
+            id="empty_token",
+        ),
+        pytest.param(
+            {"token": "a" * 55},
+            id="token_too_long",
+        ),
+        pytest.param(
+            {"token": 67},
+            id="token_wrong_type",
+        ),
+        pytest.param(
+            {},
+            id="missing_token",
+        ),
+    ],
+)
+def test_token_verification_token_validation(client, payload):
     response = client.post(
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email",
-        json={"token": too_long},
+        json=payload,
     )
-    assert response.status_code == 400
 
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email", json={"token": 67}
-    )
-    assert response.status_code == 400
-
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-email", json={}
-    )
     assert response.status_code == 400
 
 

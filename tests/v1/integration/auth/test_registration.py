@@ -1,3 +1,4 @@
+import pytest
 from conftest import API_PREFIX, AUTH_ENDPOINT_PATH
 from sqlalchemy import select
 
@@ -36,39 +37,26 @@ def test_register_user_already_exists(client):
     assert response.status_code == 202
 
 
-def test_register_user_validation_error(client):
-    # invalid email format
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param(
+            {"email": "imposter", "password": "valid_password"},
+            id="invalid email format",
+        ),
+        pytest.param(
+            {"email": "user@example.com", "password": "       "},
+            id="invalid password (after strip)",
+        ),
+        pytest.param({"email": "user@example.com"}, id="missing password"),
+        pytest.param({"password": "valid_password"}, id="missing email"),
+        pytest.param({"email": 6, "password": 7}, id="invalid types"),
+    ],
+)
+def test_register_user_validation_error(client, payload):
     response = client.post(
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
-        json={"email": "imposter", "password": "valid_password"},
-    )
-    assert response.status_code == 400
-
-    # invalid password (after strip)
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
-        json={"email": "user@example.com", "password": "       "},
-    )
-    assert response.status_code == 400
-
-    # missing password
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
-        json={"email": "user@example.com"},
-    )
-    assert response.status_code == 400
-
-    # missing email
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
-        json={"password": "valid_password"},
-    )
-    assert response.status_code == 400
-
-    # invalid types
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/register",
-        json={"email": 6, "password": 7},
+        json=payload,
     )
     assert response.status_code == 400
 

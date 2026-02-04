@@ -1,5 +1,6 @@
 import secrets
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 import pytest
 from conftest import API_PREFIX, AUTH_ENDPOINT_PATH
@@ -27,36 +28,32 @@ def set_token(db_session):
     )
     db_session.add(password_reset)
     db_session.flush()
-    return {
-        "user_id": user.id,
-        "user_old_hash": user_old_hash,
-        "raw_token": raw_token,
-    }
+    return SimpleNamespace(
+        user_id=user.id,
+        user_old_hash=user_old_hash,
+        raw_token=raw_token,
+    )
 
 
 def test_verify_new_password_valid(client, set_token, db_session):
     response = client.post(
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
         json={
-            "token": set_token["raw_token"],
+            "token": set_token.raw_token,
             "password": "new_password",
         },
     )
 
     assert response.status_code == 200
 
-    user = db_session.scalar(
-        select(User).where(User.id == set_token["user_id"])
-    )
+    user = db_session.scalar(select(User).where(User.id == set_token.user_id))
 
     user_new_password_hash = user.password_hash
 
-    assert set_token["user_old_hash"] != user_new_password_hash
+    assert set_token.user_old_hash != user_new_password_hash
 
     password_reset = db_session.scalar(
-        select(PasswordReset).where(
-            PasswordReset.user_id == set_token["user_id"]
-        )
+        select(PasswordReset).where(PasswordReset.user_id == set_token.user_id)
     )
 
     assert datetime.now(timezone.utc) > password_reset.used_at
@@ -64,7 +61,7 @@ def test_verify_new_password_valid(client, set_token, db_session):
     response = client.post(
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
         json={
-            "token": set_token["raw_token"],
+            "token": set_token.raw_token,
             "password": "111111111111111",
         },
     )
@@ -72,33 +69,39 @@ def test_verify_new_password_valid(client, set_token, db_session):
     assert response.status_code == 401
 
 
-def test_verify_new_password_validation(client, set_token, db_session):
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param(
+            lambda set_token: {"token": set_token.raw_token},
+            id="missing_password",
+        ),
+        pytest.param(
+            lambda set_token: {
+                "token": set_token.raw_token,
+                "password": "",
+            },
+            id="empty_password",
+        ),
+        pytest.param(
+            lambda set_token: {"password": "valid_password"},
+            id="missing_token",
+        ),
+        pytest.param(
+            lambda set_token: {
+                "password": "valid_password",
+                "token": "invalid_token",
+            },
+            id="invalid_token",
+        ),
+    ],
+)
+def test_verify_new_password_validation(
+    client, set_token, db_session, payload
+):
     response = client.post(
         f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
-        json={
-            "token": set_token["raw_token"],
-        },
-    )
-
-    assert response.status_code == 400
-
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
-        json={"token": set_token["raw_token"], "password": ""},
-    )
-
-    assert response.status_code == 400
-
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
-        json={"password": "valid_password"},
-    )
-
-    assert response.status_code == 400
-
-    response = client.post(
-        f"{API_PREFIX}{AUTH_ENDPOINT_PATH}/verify-new-password",
-        json={"password": "valid_password", "token": "invalid_token"},
+        json=payload(set_token),
     )
 
     assert response.status_code == 400
