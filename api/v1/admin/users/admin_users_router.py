@@ -29,6 +29,21 @@ def get_user(user_id: UUID):
         return construct_response(data=UserResponse.from_model(user))
 
 
+@bp.delete("/<uuid:user_id>")
+@jwt_required()
+def delete_user(user_id: UUID):
+    requester_id = get_jwt_user_uuid()
+
+    with db_session() as session:
+        admin_users_service.ensure_has_rights(
+            session, requester_id, UserRole.admin
+        )
+
+        admin_users_service.delete_user_by_id(session, user_id)
+
+        return construct_response()
+
+
 @bp.errorhandler(Exception)
 def handle_exception(e: Exception):
     return construct_error(e)

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from domain.user.user_model import User
@@ -38,6 +38,10 @@ class UserRepository:
             raise UserNotFoundError()
 
         return result
+
+    @staticmethod
+    def delete_user_by_id(db: Session, user_id: UUID):
+        return db.execute(delete(User).where(User.id == user_id))
 
     @staticmethod
     def update_password(db: Session, user_id: UUID, password: bytes):
