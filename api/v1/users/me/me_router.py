@@ -15,18 +15,27 @@ from schemas.me_schemas.me_requests import (
 
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 
-# TODO: delete my account
-
 
 @bp.get("/")
 @jwt_required()
-def get_user():
+def get_me():
     user_id = get_jwt_user_uuid()
 
     with db_session() as session:
         user = me_service.get_user_by_id(session, user_id)
 
         return construct_response(data=UserResponse.from_model(user))
+
+
+@bp.delete("/")
+@jwt_required()
+def delete_me():
+    user_id = get_jwt_user_uuid()
+
+    with db_session() as session:
+        me_service.delete_user_by_id(session, user_id)
+
+    return construct_response()
 
 
 @bp.patch("/update_password")

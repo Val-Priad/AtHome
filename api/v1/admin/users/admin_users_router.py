@@ -49,7 +49,6 @@ def handle_exception(e: Exception):
     return construct_error(e)
 
 
-# TODO: delete user
 # TODO:
 # read users list (GDPR safe fields only)
 # add filters for users list

@@ -21,6 +21,9 @@ class MeService:
     def get_user_by_id(self, db, user_id):
         return self.user_repository.get_user_by_id(db, user_id)
 
+    def delete_user_by_id(self, db, user_id):
+        return self.user_repository.delete_user_by_id(db, user_id)
+
     def update_password(self, db: Session, user_id: UUID, raw_password: str):
         self.user_repository.update_password(
             db, user_id, self.password_hasher.hash_password(raw_password)
