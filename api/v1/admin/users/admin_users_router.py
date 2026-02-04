@@ -49,8 +49,8 @@ def handle_exception(e: Exception):
     return construct_error(e)
 
 
-# TODO:
+# TODO: 4.
 # read users list (GDPR safe fields only)
 # add filters for users list
 # add sorting for users list
-# TODO: change user role to specified
+# TODO: 1. change user role to specified
