@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
 
 from api.v1.responses import construct_error, construct_response
@@ -8,8 +8,12 @@ from di import admin_users_service
 from domain.user.user_model import UserRole
 from infrastructure.db import db_session
 from infrastructure.jwt.jwt_utils import get_jwt_user_uuid
+from schemas.admin_schemas.admin_users_schemas.admin_users_requests import (
+    UsersRequest,
+)
 from schemas.admin_schemas.admin_users_schemas.admin_users_responses import (
     UserResponse,
+    UsersResponse,
 )
 
 bp = Blueprint("admin_users", __name__, url_prefix="/api/v1/admin/users")
@@ -27,6 +31,29 @@ def get_user(user_id: UUID):
         user = admin_users_service.get_user_by_id(session, user_id)
 
         return construct_response(data=UserResponse.from_model(user))
+
+
+@bp.get("/")
+@jwt_required()
+def get_users():
+    requester_id = get_jwt_user_uuid()
+    query = UsersRequest.from_query(request.args)
+
+    with db_session() as session:
+        admin_users_service.ensure_has_rights(
+            session, requester_id, UserRole.admin, UserRole.agent
+        )
+
+        users, total = admin_users_service.get_users_list(session, query)
+
+        return construct_response(
+            data=UsersResponse.from_model(
+                users=users,
+                total=total,
+                page=query.page,
+                page_size=query.page_size,
+            )
+        )
 
 
 @bp.delete("/<uuid:user_id>")

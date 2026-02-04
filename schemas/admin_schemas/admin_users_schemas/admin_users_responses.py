@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import ConfigDict
 
 from schemas.parent_types import ResponseValidation
@@ -23,3 +25,25 @@ class UserResponse(ResponseValidation):
     description: UserDescription | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class User(ResponseValidation):
+    id: ID
+
+    email: UserEmail
+    role: UserRole
+    name: UserName | None
+    phone_number: E164PhoneNumberType | None
+    avatar_key: ImageKey | None
+
+    adv_qty: int
+    active_ads_qty: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UsersResponse(ResponseValidation):
+    users: List[User]
+    total: int
+    page: int
+    page_size: int

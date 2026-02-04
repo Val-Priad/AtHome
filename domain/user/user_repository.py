@@ -1,9 +1,9 @@
 from uuid import UUID
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from domain.user.user_model import User
+from domain.user.user_model import User, UserRole
 from exceptions.custom_exceptions.user_exceptions import UserNotFoundError
 
 
@@ -42,6 +42,18 @@ class UserRepository:
     @staticmethod
     def delete_user_by_id(db: Session, user_id: UUID):
         return db.execute(delete(User).where(User.id == user_id))
+
+    @staticmethod
+    def get_users_qty_by_role(db: Session, role: UserRole):
+        return db.scalar(select(func.count()).where(User.role == role))
+
+    # TODO: not implemented
+    @staticmethod
+    def get_related_estate_qty(db: Session): ...
+
+    # TODO: not implemented
+    @staticmethod
+    def get_related_active_estate_qty(db: Session): ...
 
     @staticmethod
     def update_password(db: Session, user_id: UUID, password: bytes):
