@@ -44,7 +44,7 @@ def change_user_role(user_id: UUID):
             session, requester_id, user_id, data.role
         )
 
-        return construct_response()
+    return construct_response()
 
 
 @bp.delete("/<uuid:user_id>")

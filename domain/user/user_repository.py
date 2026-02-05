@@ -3,12 +3,12 @@ from uuid import UUID
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from domain.user.user_model import User, UserRole
+from domain.user.user_model import User
 from exceptions.custom_exceptions.user_exceptions import UserNotFoundError
 
 
 class UserRepository:
-    @staticmethod
+    @staticmethod  # FIXME: remove operation, there is no need to have it here
     def add_user(db: Session, email: str, hashed_password: bytes) -> User:
         user = User(email=email, password_hash=hashed_password)
         db.add(user)
@@ -39,12 +39,12 @@ class UserRepository:
 
         return result
 
-    # FIXME: silent deletion
+    # FIXME: remove bulk operation, use orm method instead
     @staticmethod
     def delete_user_by_id(db: Session, user_id: UUID):
         return db.execute(delete(User).where(User.id == user_id))
 
-    # FIXME: silent update
+    # FIXME: remove bulk operation, use orm method instead
     @staticmethod
     def update_password(db: Session, user_id: UUID, password: bytes):
         db.execute(
@@ -52,14 +52,3 @@ class UserRepository:
             .where(User.id == user_id)
             .values(password_hash=password)
         )
-
-    @classmethod
-    def change_user_role(
-        cls, db: Session, user_id: UUID, role: UserRole
-    ) -> UUID:
-        return db.execute(
-            update(User)
-            .where(User.id == user_id)
-            .values(role=role)
-            .returning(User.id)
-        ).scalar_one()

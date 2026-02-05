@@ -69,7 +69,7 @@ def logged_in_user(
 ):
     user_role = getattr(request, "param", UserRole.user)
 
-    email = "user@example.com"
+    email = "logged_in_user@example.com"
     password = "12345678"
     payload = {"email": email, "password": password}
 

@@ -1,11 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from flask import Flask, request
-from flask_jwt_extended import (
-    create_access_token,
-    get_jwt,
-    set_access_cookies,
-)
+from flask_jwt_extended import create_access_token, get_jwt, set_access_cookies
 
 from .jwt_utils import get_jwt_user_uuid
 
