@@ -8,7 +8,6 @@ from domain.password_reset.password_reset_repository import (
 )
 from domain.user.user_repository import UserRepository
 from exceptions.custom_exceptions.mailer_exceptions import EmailSendError
-from exceptions.custom_exceptions.user_exceptions import TokenVerificationError
 from infrastructure.email.Mailer import Mailer
 from security import PasswordCrypto, TokenCrypto
 
@@ -48,7 +47,9 @@ class PasswordResetService:
         raw_token = self.token_hasher.generate_token()
         token_hash = self.token_hasher.hash_token(raw_token)
 
-        self.password_reset_repository.deactivate_all_user_tokens(db, user_id)
+        self.password_reset_repository.try_deactivate_all_user_tokens(
+            db, user_id
+        )
         self.password_reset_repository.add_token(
             db, user_id, token_hash, expires_at
         )
@@ -58,12 +59,10 @@ class PasswordResetService:
         token = self.password_reset_repository.get_valid_token(
             db, self.token_hasher.hash_token(raw_token)
         )
-        if token is None:
-            raise TokenVerificationError()
 
         token.used_at = datetime.now(timezone.utc)
         token.user.password_hash = self.password_hasher.hash_password(password)
 
-        self.password_reset_repository.deactivate_all_user_tokens(
+        self.password_reset_repository.try_deactivate_all_user_tokens(
             db, token.user.id
         )
