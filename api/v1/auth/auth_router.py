@@ -29,6 +29,7 @@ from schemas.auth_schemas.auth_requests import (
 bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 
+# TODO: all logic must be in service, no orchestration in router
 @bp.post("/register")
 @limiter.limit("2/minute")
 def register():

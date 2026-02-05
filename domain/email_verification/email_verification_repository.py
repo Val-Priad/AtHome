@@ -10,7 +10,6 @@ from domain.email_verification.email_verification_model import (
 from exceptions.custom_exceptions.user_exceptions import TokenVerificationError
 
 
-# TODO: add type annotations for returns to split best effort from strict
 class EmailVerificationRepository:
     @staticmethod
     def try_deactivate_all_user_tokens(

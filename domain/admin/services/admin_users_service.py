@@ -31,8 +31,8 @@ class AdminUsersService:
 
         user.role = role
 
-    def delete_user_by_id(self, db, user_id):
-        return self.user_repository.delete_user_by_id(db, user_id)
+    def delete_user_by_id(self, db: Session, user_id: UUID) -> None:
+        db.delete(self.user_repository.get_user_by_id(db, user_id))
 
     def ensure_has_rights(
         self, session: Session, requester_id: UUID, *roles: UserRole

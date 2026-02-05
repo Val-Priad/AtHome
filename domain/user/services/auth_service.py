@@ -24,8 +24,9 @@ class AuthService:
 
         hashed_password = self.password_hasher.hash_password(password)
 
-        user = self.user_repository.add_user(db, email, hashed_password)
-
+        user = User(email=email, password_hash=hashed_password)
+        db.add(user)
+        db.flush()
         return user
 
     def get_user_by_email(self, db: Session, email: str):

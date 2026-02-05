@@ -14,6 +14,7 @@ from schemas.me_schemas.me_responses import MeResponse
 bp = Blueprint("users_me", __name__, url_prefix="/api/v1/users/me")
 
 
+# TODO: all logic must be in service, no orchestration in router
 @bp.get("/")
 @jwt_required()
 def get_me():
