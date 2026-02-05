@@ -9,9 +9,12 @@ from domain.email_verification.email_verification_model import (
 )
 
 
+# TODO: add type annotations for returns to split best effort from strict
 class EmailVerificationRepository:
     @staticmethod
-    def deactivate_all_user_tokens(db: Session, user_id: uuid.UUID):
+    def deactivate_all_user_tokens(
+        db: Session, user_id: uuid.UUID
+    ):  # FIXME: try_* (best effort)
         db.execute(
             update(EmailVerification)
             .where(

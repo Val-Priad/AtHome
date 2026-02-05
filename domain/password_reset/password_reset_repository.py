@@ -9,7 +9,9 @@ from domain.password_reset.password_reset_model import PasswordReset
 
 class PasswordResetRepository:
     @staticmethod
-    def deactivate_all_user_tokens(db: Session, user_id: uuid.UUID):
+    def deactivate_all_user_tokens(
+        db: Session, user_id: uuid.UUID
+    ):  # FIXME: rename to try_deactivate... (best effort)
         db.execute(
             update(PasswordReset)
             .where(

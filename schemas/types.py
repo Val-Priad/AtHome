@@ -2,12 +2,10 @@ from typing import Annotated, Union
 from uuid import UUID
 
 from pydantic import BeforeValidator, EmailStr, Field
-from pydantic_extra_types.phone_numbers import PhoneNumber as PydanticPhoneNumber
 from pydantic_extra_types.phone_numbers import (
-    PhoneNumberValidator,
+    PhoneNumber as PydanticPhoneNumber,
 )
-
-from domain.user.user_model import UserRole as UserRoleEnum
+from pydantic_extra_types.phone_numbers import PhoneNumberValidator
 
 from .validators.user_validators import (
     reject_string_with_whitespaces,
@@ -20,7 +18,6 @@ UserName = Annotated[
     Field(min_length=1, max_length=255),
     BeforeValidator(strip_string),
 ]
-UserRole = Annotated[UserRoleEnum, Field()]
 E164PhoneNumberType = Annotated[
     Union[PydanticPhoneNumber], PhoneNumberValidator(number_format="E164")
 ]

@@ -41,6 +41,10 @@ class ForbiddenError(DomainError):
     pass
 
 
+class UserStateConflictError(DomainError):
+    pass
+
+
 def register_user_errors():
     register_custom_error(
         UserNotFoundError, "user_not_found", 404, "User not found"
@@ -101,4 +105,11 @@ def register_user_errors():
         "forbidden",
         403,
         "Forbidden action",
+    )
+
+    register_custom_error(
+        UserStateConflictError,
+        "user_state_conflict",
+        409,
+        "Operation conflict with domain rules",
     )

@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from domain.user.user_model import User
+from domain.user.user_model import User, UserRole
 from exceptions.custom_exceptions.user_exceptions import UserNotFoundError
 
 
@@ -19,7 +19,7 @@ class UserRepository:
     def exists_by_email(db: Session, email: str):
         result = db.scalar(select(1).where(User.email == email))
 
-        return result is not None
+        return result is not None  # FIXME: remove redundant comparison
 
     @staticmethod
     def get_user_by_email(db: Session, email: str) -> User:
@@ -31,7 +31,7 @@ class UserRepository:
         return result
 
     @staticmethod
-    def get_user_by_id(db: Session, user_id: UUID):
+    def get_user_by_id(db: Session, user_id: UUID) -> User:
         result = db.scalar(select(User).where(User.id == user_id))
 
         if result is None:
@@ -39,10 +39,12 @@ class UserRepository:
 
         return result
 
+    # FIXME: silent deletion
     @staticmethod
     def delete_user_by_id(db: Session, user_id: UUID):
         return db.execute(delete(User).where(User.id == user_id))
 
+    # FIXME: silent update
     @staticmethod
     def update_password(db: Session, user_id: UUID, password: bytes):
         db.execute(
@@ -50,3 +52,14 @@ class UserRepository:
             .where(User.id == user_id)
             .values(password_hash=password)
         )
+
+    @classmethod
+    def change_user_role(
+        cls, db: Session, user_id: UUID, role: UserRole
+    ) -> UUID:
+        return db.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(role=role)
+            .returning(User.id)
+        ).scalar_one()

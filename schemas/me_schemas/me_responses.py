@@ -1,5 +1,6 @@
 from pydantic import ConfigDict
 
+from domain.user.user_model import UserRole
 from schemas.parent_types import ResponseValidation
 from schemas.types import (
     ID,
@@ -8,7 +9,6 @@ from schemas.types import (
     UserDescription,
     UserEmail,
     UserName,
-    UserRole,
 )
 
 
