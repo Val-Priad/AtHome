@@ -4,6 +4,8 @@ import pytest
 from sqlalchemy import select
 
 from application.ports.object_storage import ObjectStorageError
+from domain.media.media_enums import MediaPurpose
+from domain.media.media_upload_model import MediaUpload, MediaUploadStatus
 from domain.user.user_model import User
 from tests.integration.conftest import ME_PATH
 
@@ -31,9 +33,15 @@ def test_full_profile_update(
     db_session,
     logged_in_user,
     fake_object_storage,
+    reserve_media_upload,
 ):
     avatar_key = _avatar_key(logged_in_user.id)
-    fake_object_storage.existing_object_keys = {avatar_key}
+    upload = reserve_media_upload(
+        avatar_key,
+        logged_in_user.id,
+        purpose=MediaPurpose.user_avatar,
+    )
+    fake_object_storage.existing_object_keys = {upload.upload_object_key}
     updates = {
         "name": "Updated name",
         "phone_number": "+420701111111",
@@ -55,6 +63,8 @@ def test_full_profile_update(
     assert all(
         getattr(user, field) == value for field, value in updates.items()
     )
+    db_session.expire_all()
+    assert db_session.get(MediaUpload, avatar_key) is None
 
 
 def test_avatar_can_be_cleared(
@@ -75,6 +85,31 @@ def test_avatar_can_be_cleared(
     assert _get_user(db_session, logged_in_user.email).avatar_key is None
 
 
+def test_avatar_cannot_be_attached_after_cleanup_reserved_its_object(
+    client,
+    db_session,
+    logged_in_user,
+    reserve_media_upload,
+):
+    avatar_key = _avatar_key(logged_in_user.id)
+    upload = reserve_media_upload(
+        avatar_key,
+        logged_in_user.id,
+        purpose=MediaPurpose.user_avatar,
+    )
+    upload.status = MediaUploadStatus.deleting
+    db_session.flush()
+
+    response = client.patch(
+        f"{ME_PATH}/profile",
+        json={"avatar_key": avatar_key},
+        headers=logged_in_user.headers,
+    )
+
+    assert response.status_code == 409
+    assert response.get_json()["error"]["code"] == "media_object_already_used"
+
+
 def test_existing_avatar_is_preserved_when_field_is_omitted(
     client,
     db_session,
@@ -84,7 +119,7 @@ def test_existing_avatar_is_preserved_when_field_is_omitted(
     original_avatar_key = _get_user(
         db_session, logged_in_user.email
     ).avatar_key
-    fake_object_storage.object_exists_error = ObjectStorageError(
+    fake_object_storage.inspection_error = ObjectStorageError(
         "storage unavailable"
     )
 
@@ -136,8 +171,14 @@ def test_missing_avatar_object_returns_controlled_error(
     db_session,
     logged_in_user,
     fake_object_storage,
+    reserve_media_upload,
 ):
     avatar_key = _avatar_key(logged_in_user.id)
+    reserve_media_upload(
+        avatar_key,
+        logged_in_user.id,
+        purpose=MediaPurpose.user_avatar,
+    )
     original_name = _get_user(db_session, logged_in_user.email).name
     fake_object_storage.existing_object_keys = set()
 
@@ -189,10 +230,16 @@ def test_storage_failure_returns_service_unavailable(
     db_session,
     logged_in_user,
     fake_object_storage,
+    reserve_media_upload,
 ):
     avatar_key = _avatar_key(logged_in_user.id)
+    reserve_media_upload(
+        avatar_key,
+        logged_in_user.id,
+        purpose=MediaPurpose.user_avatar,
+    )
     original_name = _get_user(db_session, logged_in_user.email).name
-    fake_object_storage.object_exists_error = ObjectStorageError(
+    fake_object_storage.inspection_error = ObjectStorageError(
         "storage unavailable"
     )
 

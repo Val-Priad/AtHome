@@ -118,10 +118,6 @@ class EstateResponseMapper:
     @staticmethod
     def _get_preview(media: list[EstateMedia]) -> EstateMedia | None:
         return next(
-            (
-                item
-                for item in sorted(media, key=lambda item: item.position)
-                if item.media_type == MediaType.image
-            ),
+            (item for item in media if item.media_type == MediaType.image),
             None,
         )

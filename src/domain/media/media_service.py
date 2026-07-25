@@ -1,17 +1,15 @@
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import PurePosixPath
-from typing import Protocol
-from uuid import UUID
 
 from application.ports.object_storage import (
     ObjectStorageError,
     ObjectStorageProtocol,
 )
 from domain.media.media_config import (
-    MEDIA_CONFIG_BY_PURPOSE,
-    MediaPurposeConfig,
+    MEDIA_FORMAT_BY_EXTENSION,
 )
-from domain.media.media_enums import MediaPurpose, MediaType
+from domain.media.media_upload_model import MediaUpload
 from exceptions.custom_exceptions.media_exceptions import (
     InvalidMediaObjectKeyError,
     MediaObjectNotFoundError,
@@ -19,125 +17,95 @@ from exceptions.custom_exceptions.media_exceptions import (
 )
 
 
-class MediaItemProtocol(Protocol):
-    object_key: str
-    media_type: MediaType
-
-
 class MediaService:
+    _MAX_FINALIZATION_WORKERS = 5
+
     def __init__(self, object_storage: ObjectStorageProtocol) -> None:
         self._object_storage = object_storage
 
-    def validate_object(
+    def finalize_objects(
         self,
         *,
-        object_key: str,
-        uploader_id: UUID,
-        purpose: MediaPurpose,
-        media_type: MediaType,
+        uploads: Sequence[MediaUpload],
     ) -> None:
-        self.validate_owned_object_key(
-            object_key=object_key,
-            uploader_id=uploader_id,
-            purpose=purpose,
-            media_type=media_type,
-        )
-        self._ensure_object_exists(object_key)
+        if not uploads:
+            return
 
-    def validate_owned_object_key(
+        if len(uploads) == 1:
+            self._promote_and_validate(upload=uploads[0])
+            return
+
+        with ThreadPoolExecutor(
+            max_workers=min(self._MAX_FINALIZATION_WORKERS, len(uploads))
+        ) as executor:
+            futures = [
+                executor.submit(
+                    self._promote_and_validate,
+                    upload=upload,
+                )
+                for upload in uploads
+            ]
+            for future in futures:
+                future.result()
+
+    def _promote_and_validate(
         self,
         *,
-        object_key: str,
-        uploader_id: UUID,
-        purpose: MediaPurpose,
-        media_type: MediaType | None = None,
+        upload: MediaUpload,
     ) -> None:
-        config = MEDIA_CONFIG_BY_PURPOSE[purpose]
-        filename = self._extract_filename(
-            object_key=object_key,
-            uploader_id=uploader_id,
-            config=config,
-        )
-        extension = self._validate_generated_filename(filename)
-        if media_type is None:
-            allowed_extensions = {
-                allowed_extension
-                for extensions in config.extensions_by_media_type.values()
-                for allowed_extension in extensions
-            }
-            if extension not in allowed_extensions:
-                raise InvalidMediaObjectKeyError()
-        else:
-            self._validate_extension(
-                extension=extension,
-                media_type=media_type,
-                config=config,
-            )
-
-    def validate_objects(
-        self,
-        *,
-        media: Sequence[MediaItemProtocol],
-        uploader_id: UUID,
-        purpose: MediaPurpose,
-    ) -> None:
-        for item in media:
-            self.validate_object(
-                object_key=item.object_key,
-                uploader_id=uploader_id,
-                purpose=purpose,
-                media_type=item.media_type,
-            )
-
-    @staticmethod
-    def _extract_filename(
-        *,
-        object_key: str,
-        uploader_id: UUID,
-        config: MediaPurposeConfig,
-    ) -> str:
-        uploader_prefix = f"{config.prefix}/{uploader_id}/"
-        if not object_key.startswith(uploader_prefix):
-            raise InvalidMediaObjectKeyError()
-
-        filename = object_key.removeprefix(uploader_prefix)
-        if "/" in filename:
-            raise InvalidMediaObjectKeyError()
-
-        return filename
-
-    @staticmethod
-    def _validate_generated_filename(filename: str) -> str:
-        path = PurePosixPath(filename)
-        if not path.stem or not path.suffix:
-            raise InvalidMediaObjectKeyError()
-
         try:
-            media_id = UUID(path.stem)
-        except ValueError as error:
-            raise InvalidMediaObjectKeyError() from error
+            promoted = self._object_storage.promote_object(
+                source_key=upload.upload_object_key,
+                destination_key=upload.object_key,
+            )
+        except ObjectStorageError as error:
+            raise MediaUploadError() from error
+        if not promoted:
+            raise MediaObjectNotFoundError()
+        self._ensure_object_is_valid(
+            object_key=upload.object_key,
+        )
 
-        if str(media_id) != path.stem:
-            raise InvalidMediaObjectKeyError()
-
-        return path.suffix.removeprefix(".")
-
-    @staticmethod
-    def _validate_extension(
+    def _ensure_object_is_valid(
+        self,
         *,
-        extension: str,
-        media_type: MediaType,
-        config: MediaPurposeConfig,
+        object_key: str,
     ) -> None:
-        allowed_extensions = config.extensions_by_media_type.get(media_type)
-        if allowed_extensions is None or extension not in allowed_extensions:
-            raise InvalidMediaObjectKeyError()
-
-    def _ensure_object_exists(self, object_key: str) -> None:
         try:
-            object_exists = self._object_storage.object_exists(object_key)
+            inspection = self._object_storage.inspect_object(object_key)
         except ObjectStorageError as error:
             raise MediaUploadError() from error
 
-        if not object_exists:
+        if inspection is None:
             raise MediaObjectNotFoundError()
+
+        extension = PurePosixPath(object_key).suffix.removeprefix(".")
+        content_type, media_format = MEDIA_FORMAT_BY_EXTENSION[extension]
+        if (
+            inspection.content_type != content_type.value
+            or inspection.size_bytes <= 0
+            or inspection.size_bytes > media_format.max_size_bytes
+            or not self._matches_file_signature(
+                extension,
+                inspection.header_bytes,
+            )
+        ):
+            raise InvalidMediaObjectKeyError(
+                "Uploaded media content does not match its declared type"
+            )
+
+    @staticmethod
+    def _matches_file_signature(extension: str, header: bytes) -> bool:
+        if extension == "jpg":
+            return header.startswith(b"\xff\xd8\xff")
+        if extension == "png":
+            return header.startswith(b"\x89PNG\r\n\x1a\n")
+        if extension == "webp":
+            return (
+                len(header) >= 12
+                and header.startswith(b"RIFF")
+                and header[8:12] == b"WEBP"
+            )
+        if extension == "mp4":
+            return len(header) >= 12 and header[4:8] == b"ftyp"
+        return False

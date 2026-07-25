@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from domain.user.services.password_hasher import PasswordHasher
+from domain.user.user_model import User
 from domain.user.user_repository import UserRepository
 from exceptions.custom_exceptions.user_exceptions import (
     MissingUpdateDataError,
@@ -14,7 +15,7 @@ from exceptions.custom_exceptions.user_exceptions import (
 class MeService:
     def __init__(
         self, user_repository: UserRepository, password_hasher: PasswordHasher
-    ):
+    ) -> None:
         self.user_repository = user_repository
         self.password_hasher = password_hasher
 
@@ -42,7 +43,7 @@ class MeService:
         session: Session,
         user_id: UUID,
         updates: dict[str, Any],
-    ):
+    ) -> User:
         user = self.user_repository.get_user_by_id(session, user_id)
 
         if not updates:
@@ -52,3 +53,10 @@ class MeService:
             setattr(user, field, value)
 
         return user
+
+    def get_user_for_update(
+        self,
+        session: Session,
+        user_id: UUID,
+    ) -> User:
+        return self.user_repository.get_user_by_id_for_update(session, user_id)

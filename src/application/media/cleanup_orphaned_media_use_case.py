@@ -9,6 +9,7 @@ from application.ports.object_storage import (
 from application.ports.transaction_manager import TransactionManagerProtocol
 from domain.media.media_config import MEDIA_CONFIG_BY_PURPOSE
 from domain.media.media_enums import MediaPurpose
+from domain.media.media_upload_repository import MediaUploadRepository
 from domain.media.media_usage_service import MediaUsageService
 
 _logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class OrphanCleanupResult:
     used: int
     deleted: int
     failed: int
+    expired_reservations_deleted: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +38,7 @@ class CleanupOrphanedMediaUseCase:
         *,
         transactions: TransactionManagerProtocol,
         media_usage_service: MediaUsageService,
+        media_upload_repository: MediaUploadRepository,
         object_storage: ObjectStorageProtocol,
         min_object_age: timedelta,
         batch_size: int = 500,
@@ -47,12 +50,21 @@ class CleanupOrphanedMediaUseCase:
 
         self._transactions = transactions
         self._media_usage_service = media_usage_service
+        self._media_upload_repository = media_upload_repository
         self._object_storage = object_storage
         self._min_object_age = min_object_age
         self._batch_size = batch_size
 
     def execute(self) -> OrphanCleanupResult:
         cutoff = datetime.now(timezone.utc) - self._min_object_age
+        with self._transactions.session() as session:
+            expired_reservations_deleted = (
+                self._media_upload_repository.delete_expired_available(
+                    session,
+                    cutoff,
+                )
+            )
+
         scanned = 0
         eligible = 0
         used = 0
@@ -78,6 +90,7 @@ class CleanupOrphanedMediaUseCase:
             used=used,
             deleted=deleted,
             failed=failed,
+            expired_reservations_deleted=expired_reservations_deleted,
         )
 
         _logger.info(
@@ -88,6 +101,9 @@ class CleanupOrphanedMediaUseCase:
                 "used": result.used,
                 "deleted": result.deleted,
                 "failed": result.failed,
+                "expired_reservations_deleted": (
+                    result.expired_reservations_deleted
+                ),
             },
         )
         return result
@@ -142,17 +158,28 @@ class CleanupOrphanedMediaUseCase:
         object_keys: list[str],
     ) -> _BatchCleanupResult:
         with self._transactions.session() as session:
+            uploads = self._media_upload_repository.lock_for_cleanup(
+                session,
+                object_keys,
+            )
             used_keys = self._media_usage_service.get_used_object_keys(
                 session=session,
                 purpose=purpose,
                 object_keys=object_keys,
             )
 
-        orphan_keys = [
-            object_key
-            for object_key in object_keys
-            if object_key not in used_keys
-        ]
+            orphan_keys = [
+                object_key
+                for object_key in object_keys
+                if object_key not in used_keys
+            ]
+            self._media_upload_repository.mark_deleting(
+                [
+                    uploads[object_key]
+                    for object_key in orphan_keys
+                    if object_key in uploads
+                ]
+            )
         if not orphan_keys:
             return _BatchCleanupResult(
                 used=len(used_keys),
@@ -161,7 +188,7 @@ class CleanupOrphanedMediaUseCase:
             )
 
         try:
-            self._object_storage.delete_objects(orphan_keys)
+            delete_result = self._object_storage.delete_objects(orphan_keys)
         except ObjectStorageError:
             _logger.exception(
                 "Failed to delete orphaned media objects",
@@ -171,14 +198,29 @@ class CleanupOrphanedMediaUseCase:
                     "object_keys_sample": orphan_keys[:10],
                 },
             )
+            with self._transactions.session() as session:
+                self._media_upload_repository.restore_available(
+                    session,
+                    orphan_keys,
+                )
             return _BatchCleanupResult(
                 used=len(used_keys),
                 deleted=0,
                 failed=len(orphan_keys),
             )
 
+        with self._transactions.session() as session:
+            self._media_upload_repository.delete_by_object_keys(
+                session,
+                delete_result.deleted_keys,
+            )
+            self._media_upload_repository.restore_available(
+                session,
+                delete_result.failed_keys,
+            )
+
         return _BatchCleanupResult(
             used=len(used_keys),
-            deleted=len(orphan_keys),
-            failed=0,
+            deleted=len(delete_result.deleted_keys),
+            failed=len(delete_result.failed_keys),
         )

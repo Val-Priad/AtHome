@@ -1,12 +1,18 @@
+from collections.abc import Iterator
+from contextlib import contextmanager
 from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
 
-from application.media.create_media_upload_url_use_case import (
-    CreateMediaUploadUrlUseCase,
+from application.media.create_media_upload_urls_use_case import (
+    CreateMediaUploadUrlsUseCase,
 )
 from application.ports.object_storage import ObjectStorageError
+from domain.media.media_config import (
+    MAX_IMAGE_SIZE_BYTES,
+    MAX_VIDEO_SIZE_BYTES,
+)
 from exceptions.custom_exceptions.media_exceptions import (
     InvalidMediaObjectKeyError,
     MediaObjectAlreadyUsedError,
@@ -21,8 +27,6 @@ from exceptions.error_catalog import (
     register_errors,
 )
 from schemas.media_schemas.requests.media_upload_url_request import (
-    MAX_IMAGE_SIZE_BYTES,
-    MAX_VIDEO_SIZE_BYTES,
     MediaUploadUrlRequest,
 )
 
@@ -33,7 +37,6 @@ MEDIA_ID = UUID("20000000-0000-0000-0000-000000000002")
 def _payload(**overrides):
     payload = {
         "purpose": "estate",
-        "filename": "living-room.webp",
         "content_type": "image/webp",
         "size_bytes": 1024,
     }
@@ -48,6 +51,11 @@ def test_rejects_unsupported_content_type() -> None:
         )
 
 
+def test_rejects_obsolete_filename_field() -> None:
+    with pytest.raises(RequestValidationError):
+        MediaUploadUrlRequest.from_request(_payload(filename="ignored.webp"))
+
+
 def test_rejects_oversized_image() -> None:
     with pytest.raises(RequestValidationError):
         MediaUploadUrlRequest.from_request(
@@ -59,7 +67,6 @@ def test_rejects_oversized_video() -> None:
     with pytest.raises(RequestValidationError):
         MediaUploadUrlRequest.from_request(
             _payload(
-                filename="tour.mp4",
                 content_type="video/mp4",
                 size_bytes=MAX_VIDEO_SIZE_BYTES + 1,
             )
@@ -69,25 +76,24 @@ def test_rejects_oversized_video() -> None:
 def test_generated_object_key_uses_expected_prefix_and_extension() -> None:
     object_storage = Mock()
     object_storage.create_upload_url.return_value = "https://upload.test/url"
-    use_case = CreateMediaUploadUrlUseCase(
+    use_case = _use_case(
         object_storage=object_storage,
-        presigned_url_ttl_seconds=300,
         uuid_factory=lambda: MEDIA_ID,
     )
     request = MediaUploadUrlRequest.from_request(
         _payload(
             purpose="user_avatar",
-            filename="client-name.mp4",
             content_type="image/jpeg",
         )
     )
 
-    response = use_case.execute(request, REQUESTER_ID)
+    response = use_case.execute([request], REQUESTER_ID).uploads[0]
 
     expected_key = f"user-avatars/{REQUESTER_ID}/{MEDIA_ID}.jpg"
+    expected_upload_key = f"user-avatars/{REQUESTER_ID}/pending/{MEDIA_ID}.jpg"
     assert response.object_key == expected_key
     object_storage.create_upload_url.assert_called_once_with(
-        object_key=expected_key,
+        object_key=expected_upload_key,
         content_type="image/jpeg",
         size_bytes=1024,
     )
@@ -97,16 +103,36 @@ def test_wraps_object_storage_error_as_media_upload_error() -> None:
     object_storage = Mock()
     storage_error = ObjectStorageError("S3 unavailable")
     object_storage.create_upload_url.side_effect = storage_error
-    use_case = CreateMediaUploadUrlUseCase(
+    use_case = _use_case(
         object_storage=object_storage,
-        presigned_url_ttl_seconds=300,
     )
     request = MediaUploadUrlRequest.from_request(_payload())
 
     with pytest.raises(MediaUploadError) as raised:
-        use_case.execute(request, REQUESTER_ID)
+        use_case.execute([request], REQUESTER_ID)
 
     assert raised.value.__cause__ is storage_error
+
+
+def _use_case(
+    *,
+    object_storage: Mock,
+    uuid_factory=lambda: MEDIA_ID,
+) -> CreateMediaUploadUrlsUseCase:
+    transactions = Mock()
+
+    @contextmanager
+    def session() -> Iterator[Mock]:
+        yield Mock()
+
+    transactions.session.side_effect = session
+    return CreateMediaUploadUrlsUseCase(
+        transactions=transactions,
+        media_upload_repository=Mock(),
+        object_storage=object_storage,
+        presigned_url_ttl_seconds=300,
+        uuid_factory=uuid_factory,
+    )
 
 
 @pytest.mark.parametrize(

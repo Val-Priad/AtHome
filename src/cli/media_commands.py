@@ -30,7 +30,9 @@ def cleanup_orphans() -> None:
         f"eligible={result.eligible}, "
         f"used={result.used}, "
         f"deleted={result.deleted}, "
-        f"failed={result.failed}"
+        f"failed={result.failed}, "
+        "expired_reservations_deleted="
+        f"{result.expired_reservations_deleted}"
     )
 
     if result.failed:

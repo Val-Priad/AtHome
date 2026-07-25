@@ -1,49 +1,17 @@
-from enum import Enum
-from typing import Annotated
+from pydantic import ConfigDict, Field, ValidationInfo, field_validator
 
-from pydantic import Field, ValidationInfo, field_validator
-from pydantic.functional_validators import BeforeValidator
-
-from domain.media.media_enums import MediaPurpose
+from domain.media.media_config import (
+    MEDIA_CONFIG_BY_PURPOSE,
+    MEDIA_FORMAT_BY_CONTENT_TYPE,
+)
+from domain.media.media_enums import MediaContentType, MediaPurpose
 from schemas.parent_types import RequestValidation
-from schemas.validators.user_validators import strip_string
-
-MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
-MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024
-
-
-class MediaContentType(str, Enum):
-    jpeg = "image/jpeg"
-    png = "image/png"
-    webp = "image/webp"
-    mp4 = "video/mp4"
-
-    @property
-    def extension(self) -> str:
-        if self is MediaContentType.jpeg:
-            return "jpg"
-
-        return self.value.rsplit("/", maxsplit=1)[1]
-
-    @property
-    def is_image(self) -> bool:
-        return self.value.startswith("image/")
-
-    @property
-    def max_size_bytes(self) -> int:
-        if self.is_image:
-            return MAX_IMAGE_SIZE_BYTES
-
-        return MAX_VIDEO_SIZE_BYTES
 
 
 class MediaUploadUrlRequest(RequestValidation):
+    model_config = ConfigDict(extra="forbid")
+
     purpose: MediaPurpose
-    filename: Annotated[
-        str,
-        BeforeValidator(strip_string),
-        Field(min_length=1, max_length=255),
-    ]
     content_type: MediaContentType
     size_bytes: int = Field(gt=0)
 
@@ -54,11 +22,20 @@ class MediaUploadUrlRequest(RequestValidation):
         content_type: MediaContentType,
         info: ValidationInfo,
     ) -> MediaContentType:
-        if (
-            info.data.get("purpose") is MediaPurpose.user_avatar
-            and not content_type.is_image
-        ):
-            raise ValueError("User avatar must be an image")
+        purpose = info.data.get("purpose")
+        if not isinstance(purpose, MediaPurpose):
+            return content_type
+
+        media_format = MEDIA_FORMAT_BY_CONTENT_TYPE[content_type]
+        purpose_config = MEDIA_CONFIG_BY_PURPOSE[purpose]
+        allowed_extensions = purpose_config.extensions_by_media_type.get(
+            media_format.media_type,
+            frozenset(),
+        )
+        if media_format.extension not in allowed_extensions:
+            raise ValueError(
+                "Content type is not allowed for this media purpose"
+            )
 
         return content_type
 
@@ -73,11 +50,21 @@ class MediaUploadUrlRequest(RequestValidation):
         if not isinstance(content_type, MediaContentType):
             return size_bytes
 
-        if size_bytes > content_type.max_size_bytes:
-            media_kind = "Image" if content_type.is_image else "Video"
+        media_format = MEDIA_FORMAT_BY_CONTENT_TYPE[content_type]
+        if size_bytes > media_format.max_size_bytes:
+            media_kind = media_format.media_type.value.capitalize()
             raise ValueError(
                 f"{media_kind} size must not exceed "
-                f"{content_type.max_size_bytes} bytes"
+                f"{media_format.max_size_bytes} bytes"
             )
 
         return size_bytes
+
+
+class MediaUploadUrlsRequest(RequestValidation):
+    model_config = ConfigDict(extra="forbid")
+
+    files: list[MediaUploadUrlRequest] = Field(
+        min_length=1,
+        max_length=20,
+    )

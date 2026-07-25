@@ -43,6 +43,7 @@ def build_users_container(
             me_service=services.me,
             media_service=services.media,
             response_mapper=user_response_mapper,
+            media_upload_repository=repositories.media_uploads,
         ),
         cleanup_unverified=CleanupUnverifiedUsersUseCase(
             transactions=transactions,

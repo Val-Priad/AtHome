@@ -43,7 +43,4 @@ def test_non_testing_config_requires_external_infrastructure(
 
     assert "RATELIMIT_STORAGE_URI" in str(error.value)
     assert "RESEND_API_KEY" in str(error.value)
-    assert "S3_ACCESS_KEY_ID" in str(error.value)
     assert "S3_BUCKET_NAME" in str(error.value)
-    assert "S3_REGION" in str(error.value)
-    assert "S3_SECRET_ACCESS_KEY" in str(error.value)

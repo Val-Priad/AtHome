@@ -48,6 +48,22 @@ class EstateRepository:
 
         return estate
 
+    def get_full_estate_by_id_for_update(
+        self,
+        session: Session,
+        estate_id: UUID,
+    ) -> Estate:
+        stmt = (
+            select(Estate)
+            .where(Estate.id == estate_id)
+            .options(*self._full_load_options())
+            .with_for_update(of=Estate)
+        )
+        estate = session.scalar(stmt)
+        if estate is None:
+            raise EstateNotFoundError()
+        return estate
+
     def delete_estate_by_id(
         self,
         session: Session,

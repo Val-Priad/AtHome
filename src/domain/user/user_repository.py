@@ -78,6 +78,18 @@ class UserRepository:
             raise UserNotFoundError()
         return result
 
+    def get_user_by_id_for_update(
+        self,
+        session: Session,
+        user_id: UUID,
+    ) -> User:
+        result = session.scalar(
+            select(User).where(User.id == user_id).with_for_update()
+        )
+        if result is None:
+            raise UserNotFoundError()
+        return result
+
     def list_users(
         self, session: Session, query: UsersListRequest
     ) -> tuple[list[User], int]:

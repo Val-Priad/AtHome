@@ -10,7 +10,7 @@ from domain.estate.enums.estate_listing_enums import ListingStatus
 from domain.estate.enums.estate_vicinity_enums import VicinityType
 from domain.estate.estate_model import Estate
 from domain.estate.models.estate_media_model import EstateMedia
-from domain.media.media_enums import MediaType
+from domain.media.media_enums import MediaPurpose, MediaType
 from domain.user.user_model import User, UserRole
 from tests.integration.admin_estate.test_create_estate import (
     base_payload,
@@ -59,6 +59,7 @@ def test_admin_update_estate_success(
     logged_in_user,
     test_password_hash,
     fake_object_storage,
+    reserve_media_upload,
 ):
     seller = _create_test_user(
         db_session,
@@ -108,6 +109,11 @@ def test_admin_update_estate_success(
             "media_type": "image",
         }
     ]
+    reserve_media_upload(
+        payload["media"][0]["object_key"],
+        logged_in_user.id,
+        purpose=MediaPurpose.estate,
+    )
 
     response = client.put(
         f"{ADMIN_ESTATE_PATH}/{estate_id}",
@@ -203,7 +209,7 @@ def test_admin_update_draft_to_active_sets_published_at(
         agent_id=agent.id,
     )
     payload["seller_id"] = str(seller.id)
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
 
     response = client.put(
         f"{ADMIN_ESTATE_PATH}/{estate_id}",
@@ -258,7 +264,7 @@ def test_admin_update_active_to_draft_clears_published_at(
         agent_id=agent.id,
     )
     payload["seller_id"] = str(seller.id)
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
 
     response = client.put(
         f"{ADMIN_ESTATE_PATH}/{estate_id}",
@@ -313,7 +319,7 @@ def test_admin_update_active_to_archived_keeps_published_at(
         agent_id=agent.id,
     )
     payload["seller_id"] = str(seller.id)
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
 
     response = client.put(
         f"{ADMIN_ESTATE_PATH}/{estate_id}",
@@ -363,7 +369,7 @@ def test_admin_update_estate_allows_past_available_from(
         agent_id=agent.id,
     )
     payload["seller_id"] = str(seller.id)
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
     payload["listing"]["available_from"] = (
         date.today() - timedelta(days=30)
     ).isoformat()
@@ -598,7 +604,19 @@ def test_update_estate_unauthorized_without_token(
 def test_admin_update_missing_estate_returns_404(
     client,
     logged_in_user,
+    fake_vicinity_client,
+    monkeypatch,
 ):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError(
+            "Vicinity service must not be called for a missing estate"
+        )
+
+    monkeypatch.setattr(
+        fake_vicinity_client,
+        "fetch_vicinity",
+        fail_if_called,
+    )
     payload = base_payload(
         listing_status=ListingStatus.draft,
         agent_id=None,
@@ -664,6 +682,43 @@ def test_admin_update_rejects_new_media_owned_by_another_uploader(
 
 
 @pytest.mark.parametrize("logged_in_user", [UserRole.admin], indirect=True)
+def test_admin_update_rejects_changing_existing_media_type(
+    client,
+    db_session,
+    logged_in_user,
+):
+    object_key = f"estate-media/{logged_in_user.id}/{uuid4()}.webp"
+    estate_id = create_filter_estate(
+        db_session,
+        title="Media type cannot change",
+        status=ListingStatus.draft,
+        media=[
+            EstateMedia(
+                object_key=object_key,
+                media_type=MediaType.image,
+                position=0,
+            )
+        ],
+    )
+    payload = base_payload(listing_status=ListingStatus.draft)
+    payload["media"] = [
+        {
+            "object_key": object_key,
+            "media_type": MediaType.video.value,
+        }
+    ]
+
+    response = client.put(
+        f"{ADMIN_ESTATE_PATH}/{estate_id}",
+        json=payload,
+        headers=logged_in_user.headers,
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "invalid_media_object_key"
+
+
+@pytest.mark.parametrize("logged_in_user", [UserRole.admin], indirect=True)
 def test_admin_update_rejects_missing_new_media_object(
     client,
     db_session,
@@ -676,7 +731,7 @@ def test_admin_update_rejects_missing_new_media_object(
         status=ListingStatus.draft,
     )
     payload = base_payload(listing_status=ListingStatus.draft)
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
     fake_object_storage.existing_object_keys = set()
 
     response = client.put(
@@ -694,8 +749,14 @@ def test_admin_update_rejects_media_used_by_another_estate(
     client,
     db_session,
     logged_in_user,
+    reserve_media_upload,
 ):
     used_object_key = f"estate-media/{logged_in_user.id}/{uuid4()}.webp"
+    reserve_media_upload(
+        used_object_key,
+        logged_in_user.id,
+        purpose=MediaPurpose.estate,
+    )
     create_filter_estate(
         db_session,
         title="Owner of reused media",

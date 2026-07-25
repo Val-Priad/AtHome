@@ -37,6 +37,7 @@ def build_estates_container(
             estate_service=services.estates,
             media_service=services.media,
             estate_media_repository=repositories.estate_media,
+            media_upload_repository=repositories.media_uploads,
             authorization_service=services.authorization,
             participants_service=services.estate_participants,
         ),
@@ -48,6 +49,7 @@ def build_estates_container(
             media_service=services.media,
             estate_media_repository=repositories.estate_media,
             estate_repository=repositories.estates,
+            media_upload_repository=repositories.media_uploads,
         ),
         delete=DeleteEstateUseCase(
             transactions=transactions,
@@ -59,6 +61,7 @@ def build_estates_container(
             estate_service=services.estates,
             media_service=services.media,
             estate_media_repository=repositories.estate_media,
+            media_upload_repository=repositories.media_uploads,
         ),
         get_one=GetEstateUseCase(
             transactions=transactions,

@@ -159,14 +159,10 @@ class EstateService:
     def update_estate(
         self,
         session: Session,
-        estate_id: UUID,
+        estate: Estate,
         data: EstateUpdateRequest,
+        vicinities: list[EstateVicinity],
     ) -> Estate:
-
-        estate = self.estate_repository.get_full_estate_by_id(
-            session=session,
-            estate_id=estate_id,
-        )
         old_status = estate.listing.status
 
         estate.seller_id = data.seller_id
@@ -200,7 +196,7 @@ class EstateService:
         self._replace_translations(estate, data)
         self._replace_media(session, estate, data)
 
-        estate.vicinities = self.get_vicinities_or_empty(data.location)
+        estate.vicinities = vicinities
 
         session.flush()
 

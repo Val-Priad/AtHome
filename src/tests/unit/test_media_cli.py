@@ -44,6 +44,7 @@ def test_cleanup_orphans_cli_executes_use_case_and_prints_result() -> None:
     assert "used=3" in result.output
     assert "deleted=5" in result.output
     assert "failed=0" in result.output
+    assert "expired_reservations_deleted=0" in result.output
 
 
 def test_cleanup_orphans_cli_returns_nonzero_when_deletions_failed() -> None:

@@ -9,6 +9,8 @@ from domain.estate.enums.estate_enums import EstateType, OfferType
 from domain.estate.enums.estate_listing_enums import ListingStatus
 from domain.estate.enums.estate_vicinity_enums import VicinityType
 from domain.estate.estate_model import Estate
+from domain.media.media_enums import MediaPurpose, MediaType
+from domain.media.media_upload_model import MediaUpload
 from domain.user.user_model import UserRole
 from tests.integration.conftest import ADMIN_ESTATE_PATH
 
@@ -68,10 +70,21 @@ def base_payload(
     return payload
 
 
-def set_media_uploader(payload, uploader_id) -> None:
-    payload["media"][0]["object_key"] = (
-        f"estate-media/{uploader_id}/{uuid4()}.webp"
-    )
+def set_media_uploader(payload, uploader_id, db_session=None) -> None:
+    object_key = f"estate-media/{uploader_id}/{uuid4()}.webp"
+    payload["media"][0]["object_key"] = object_key
+    if db_session is not None:
+        prefix, filename = object_key.rsplit("/", maxsplit=1)
+        db_session.add(
+            MediaUpload(
+                object_key=object_key,
+                upload_object_key=f"{prefix}/pending/{filename}",
+                uploader_id=uploader_id,
+                purpose=MediaPurpose.estate,
+                media_type=MediaType.image,
+            )
+        )
+        db_session.flush()
 
 
 def get_created_estate(db_session, response) -> Estate:
@@ -109,7 +122,7 @@ def test_admin_create_estate_success(
         listing_status=listing_status,
         agent_id=any_user.id,
     )
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
 
     response = client.post(
         ADMIN_ESTATE_PATH,
@@ -165,6 +178,10 @@ def test_admin_create_estate_success(
     assert len(estate.media) == 1
     assert estate.media[0].object_key == payload["media"][0]["object_key"]
     assert estate.media[0].position == 0
+    db_session.expire_all()
+    assert (
+        db_session.get(MediaUpload, payload["media"][0]["object_key"]) is None
+    )
 
     assert len(estate.vicinities) == 2
     assert estate.vicinities[0].type == VicinityType.bus_stop
@@ -185,7 +202,7 @@ def test_admin_create_draft_estate_without_agent_success(
         listing_status=ListingStatus.draft,
         agent_id=None,
     )
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
 
     response = client.post(
         ADMIN_ESTATE_PATH,
@@ -234,12 +251,13 @@ def test_admin_create_estate_rejects_used_media_key(
     client,
     logged_in_user,
     any_user,
+    db_session,
 ):
     payload = base_payload(
         listing_status=ListingStatus.draft,
         agent_id=any_user.id,
     )
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
 
     first_response = client.post(
         ADMIN_ESTATE_PATH,

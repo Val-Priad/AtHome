@@ -9,8 +9,13 @@ from domain.estate.estate_repository import EstateRepository
 from domain.estate.estate_service import EstateService
 from domain.media.media_enums import MediaPurpose
 from domain.media.media_service import MediaService
+from domain.media.media_upload_repository import MediaUploadRepository
 from domain.user.services.authorization import AuthorizationService
 from domain.user.user_model import UserRole
+from exceptions.custom_exceptions.estate_exceptions import EstateNotFoundError
+from exceptions.custom_exceptions.media_exceptions import (
+    InvalidMediaObjectKeyError,
+)
 from schemas.estate_schemas.requests.estate_update_request import (
     EstateUpdateRequest,
 )
@@ -29,6 +34,7 @@ class UpdateEstateUseCase:
         media_service: MediaService,
         estate_media_repository: EstateMediaRepository,
         estate_repository: EstateRepository,
+        media_upload_repository: MediaUploadRepository,
     ) -> None:
         self._transactions = transactions
         self._estate_service = estate_service
@@ -37,6 +43,7 @@ class UpdateEstateUseCase:
         self._media_service = media_service
         self._estate_media_repository = estate_media_repository
         self._estate_repository = estate_repository
+        self._media_upload_repository = media_upload_repository
 
     def execute(
         self,
@@ -50,21 +57,11 @@ class UpdateEstateUseCase:
                 requester_id,
                 data,
             )
-            estate = self._estate_repository.get_full_estate_by_id(
-                session,
-                estate_id,
-            )
-            current_object_keys = {item.object_key for item in estate.media}
+            if not self._estate_repository.estate_exists(session, estate_id):
+                raise EstateNotFoundError()
 
-        added_media = [
-            item
-            for item in data.media
-            if item.object_key not in current_object_keys
-        ]
-        self._media_service.validate_objects(
-            media=added_media,
-            uploader_id=requester_id,
-            purpose=MediaPurpose.estate,
+        vicinities = self._estate_service.get_vicinities_or_empty(
+            data.location
         )
 
         with self._transactions.session() as session:
@@ -73,14 +70,53 @@ class UpdateEstateUseCase:
                 requester_id,
                 data,
             )
+            estate = self._estate_repository.get_full_estate_by_id_for_update(
+                session,
+                estate_id,
+            )
+            current_media_types = {
+                item.object_key: item.media_type for item in estate.media
+            }
+            for item in data.media:
+                current_media_type = current_media_types.get(item.object_key)
+                if (
+                    current_media_type is not None
+                    and item.media_type != current_media_type
+                ):
+                    raise InvalidMediaObjectKeyError(
+                        "Media type cannot be changed for an existing object"
+                    )
+
+            added_media = [
+                item
+                for item in data.media
+                if item.object_key not in current_media_types
+            ]
             self._estate_media_repository.ensure_object_keys_unused(
                 session,
                 [item.object_key for item in added_media],
             )
+            uploads = self._media_upload_repository.lock_for_attachment(
+                session,
+                object_keys=[item.object_key for item in added_media],
+                uploader_id=requester_id,
+                purpose=MediaPurpose.estate,
+                media_types_by_key={
+                    item.object_key: item.media_type for item in added_media
+                },
+            )
+            self._media_service.finalize_objects(
+                uploads=list(uploads.values()),
+            )
             estate = self._estate_service.update_estate(
                 session=session,
-                estate_id=estate_id,
+                estate=estate,
                 data=data,
+                vicinities=vicinities,
+            )
+            self._media_upload_repository.consume(
+                session,
+                list(uploads.values()),
             )
             return EstateIDResponse.from_model(estate)
 

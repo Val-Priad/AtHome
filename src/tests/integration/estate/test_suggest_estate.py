@@ -68,7 +68,7 @@ def test_user_suggest_estate_success(
     db_session,
 ):
     payload = base_suggestion_payload()
-    set_media_uploader(payload, logged_in_user.id)
+    set_media_uploader(payload, logged_in_user.id, db_session)
 
     response = client.post(
         f"{ESTATE_PATH}/suggestions",

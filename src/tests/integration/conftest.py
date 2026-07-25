@@ -1,12 +1,14 @@
 import os
 from collections.abc import Iterator
 from types import SimpleNamespace
+from typing import cast
 
 from dotenv import load_dotenv
 from flask import Flask
 from flask.testing import FlaskClient
 from flask_jwt_extended import create_access_token, decode_token
 from pytest import FixtureRequest, fixture
+from sqlalchemy import Table
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import create_app
@@ -15,9 +17,11 @@ from composition.build_application_container import build_application_container
 from composition.container_access import APPLICATION_CONTAINER_KEY
 from composition.dependency_overrides import DependencyOverrides
 from config import TestingConfig
+from domain.media.media_enums import MediaPurpose, MediaType
+from domain.media.media_upload_model import MediaUpload
 from domain.user.services.password_hasher import PasswordHasher
 from domain.user.user_model import User, UserRole
-from infrastructure.db import db
+from infrastructure.db import Base, db
 from tests.integration.fake_infrastructure.fake_mailer import FakeMailer
 from tests.integration.fake_infrastructure.fake_object_storage import (
     FakeObjectStorage,
@@ -78,6 +82,11 @@ def app(
     )
 
     app.register_blueprint(testing_bp)
+    Base.metadata.create_all(
+        db.get_engine(app),
+        tables=[cast(Table, MediaUpload.__table__)],
+        checkfirst=True,
+    )
 
     try:
         yield app
@@ -137,6 +146,30 @@ def db_session(
 @fixture
 def application_container(app: Flask) -> ApplicationContainer:
     return app.extensions[APPLICATION_CONTAINER_KEY]
+
+
+@fixture
+def reserve_media_upload(db_session: Session):
+    def reserve(
+        object_key: str,
+        uploader_id,
+        *,
+        purpose: MediaPurpose,
+        media_type: MediaType = MediaType.image,
+    ) -> MediaUpload:
+        prefix, filename = object_key.rsplit("/", maxsplit=1)
+        upload = MediaUpload(
+            object_key=object_key,
+            upload_object_key=f"{prefix}/pending/{filename}",
+            uploader_id=uploader_id,
+            purpose=purpose,
+            media_type=media_type,
+        )
+        db_session.add(upload)
+        db_session.flush()
+        return upload
+
+    return reserve
 
 
 @fixture(scope="session")
